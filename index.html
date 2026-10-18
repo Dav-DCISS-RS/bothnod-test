@@ -5,35 +5,37 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta http-equiv="Cache-Control" content="no-cache">
-<style>html,body{margin:0;padding:0;background:#141017}</style>
+<style>html,body{margin:0;padding:0;background:#160F14}</style>
 </head>
 <body>
 <title>Bothnod</title>
-<meta name="theme-color" content="#141017">
+<meta name="theme-color" content="#160F14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bothnod">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;1,6..96,400;1,6..96,500&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;1,6..96,400;1,6..96,500&family=Jost:wght@400;500;600&display=swap">
 <style>
 /* Layout : une colonne façon appli mobile (440px max), écrans successifs, barre d'actions basse. Univers « nuit » assumé, thème unique sombre. */
 :root{
-  --bg:#141017;
-  --surface:#1f1923;
-  --surface-2:#2a222f;
-  --line:#3b3041;
-  --fg:#f3eaef;
-  --muted:#a5939f;
-  --rose:#e8698a;      /* J'aime + accent */
-  --rose-ink:#2a0f18;
-  --gold:#d8b26a;      /* Pourquoi pas / accords */
-  --gold-ink:#2a1f08;
-  --no:#6d6070;        /* Je n'aime pas */
-  --danger:#ff8a7a;
+  /* Charte Bothnod (18 oct. 2026) : Nuit, Or, Rose poudré, Ivoire, Prune, Bordeaux */
+  --bg:#160F14;        /* Nuit */
+  --surface:#21171E;
+  --surface-2:#2C1F28;
+  --line:#3E2D38;
+  --fg:#F4EDE6;        /* Ivoire */
+  --muted:#AE9C98;
+  --rose:#E3B7A8;      /* Rose poudré : J'aime + accent */
+  --rose-ink:#2A1630;  /* Prune */
+  --gold:#C9A46A;      /* Or : Pourquoi pas / accords */
+  --gold-ink:#1E140C;
+  --bordeaux:#8A3A4E;  /* Bordeaux */
+  --no:#6A5862;        /* Je n'aime pas */
+  --danger:#E8877A;
   --font-display:"Bodoni Moda", "Didot", "Times New Roman", serif;
-  --font-body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body:"Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r:14px;
   color-scheme:dark;
 }
@@ -67,6 +69,8 @@ p{margin:0}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px}
 .back{background:none;border:0;color:var(--fg);font:500 .95rem var(--font-body);cursor:pointer;padding:8px 0;display:inline-flex;gap:6px;align-items:center}
 .brand{font-family:var(--font-display);font-style:italic;font-size:1.4rem}
+.brand.logo{display:inline-flex;align-items:center;gap:4px}
+.brand.logo svg{width:1.5em;height:1.5em;flex:none}
 label.f{display:flex;flex-direction:column;gap:6px;font-size:.85rem;color:var(--muted);font-weight:500}
 input[type=text],input[type=password],textarea,select{background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--fg);font:400 1rem var(--font-body);padding:12px 14px;width:100%;box-sizing:border-box}
 textarea{min-height:84px;resize:vertical}
@@ -77,10 +81,8 @@ textarea{min-height:84px;resize:vertical}
 
 /* Accueil */
 .hero{padding-block:28px 6px;display:flex;flex-direction:column;gap:14px}
-.hero .mark{display:flex;gap:6px;align-items:center}
-.hero .mark i{width:22px;height:22px;border-radius:50%;display:block}
-.hero .mark i:first-child{background:var(--rose)}
-.hero .mark i:last-child{background:var(--gold);margin-left:-12px;mix-blend-mode:screen}
+.hero .mark{display:flex;align-items:center}
+.hero .mark svg{width:64px;height:64px;display:block;margin-left:-8px}
 .principles{display:grid;gap:10px}
 .principle{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
 .principle b{font-family:var(--font-display);font-style:italic;color:var(--gold);font-size:1.3rem;line-height:1.1}
@@ -232,7 +234,7 @@ textarea{min-height:84px;resize:vertical}
 .com{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:10px}
 .com:first-child{border-top:0;padding-top:0}
 .com p{overflow-wrap:anywhere}
-.thumb .tag{position:absolute;left:6px;bottom:6px;font-size:.68rem;font-weight:600;background:rgba(20,16,23,.75);color:var(--fg);padding:2px 7px;border-radius:6px}
+.thumb .tag{position:absolute;left:6px;bottom:6px;font-size:.68rem;font-weight:600;background:rgba(22,15,20,.75);color:var(--fg);padding:2px 7px;border-radius:6px}
 .viewer img,.viewer video{width:100%;max-width:100%;border-radius:14px;max-height:68vh;object-fit:contain;background:#000;display:block}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;color:var(--fg);font:inherit;width:100%;text-align:left}
 .toggle .sw{width:40px;height:24px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .15s}
@@ -268,7 +270,7 @@ textarea{min-height:84px;resize:vertical}
 .post .media{position:relative;aspect-ratio:4/5;max-width:100%;border-radius:16px;overflow:hidden;background:var(--surface-2)}
 .post .media img,.post .media video{width:100%;height:100%;object-fit:cover;display:block}
 .post .art{position:absolute;inset:0}
-.post .ex{position:absolute;top:10px;left:10px;font-size:.68rem;font-weight:600;background:rgba(20,16,23,.7);color:var(--fg);padding:3px 8px;border-radius:6px}
+.post .ex{position:absolute;top:10px;left:10px;font-size:.68rem;font-weight:600;background:rgba(22,15,20,.7);color:var(--fg);padding:3px 8px;border-radius:6px}
 .post .acts{display:flex;align-items:center;gap:4px}
 .post .acts button{background:none;border:0;color:var(--fg);font:600 .88rem var(--font-body);padding:6px 8px;border-radius:8px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
 .post .acts button:hover{background:var(--surface)}
@@ -387,7 +389,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
 @keyframes unfold{from{transform:perspective(700px) rotateX(-75deg);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.letter.fresh{animation:none}}
 .seal{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
-.seal .wax{width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f2a0b6,var(--rose) 50%,#9c3653);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;color:var(--rose-ink);font-size:1.2rem;box-shadow:inset 0 0 0 3px color-mix(in srgb,#9c3653 60%,transparent)}
+.seal .wax{width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d98b9b,var(--bordeaux) 55%,#5e2334);display:grid;place-items:center;font-family:var(--font-display);font-style:italic;color:var(--fg);font-size:1.2rem;box-shadow:inset 0 0 0 3px color-mix(in srgb,#5e2334 60%,transparent)}
 .seal.locked .wax{filter:saturate(.35) brightness(.75)}
 .seal > div{min-width:0;display:flex;flex-direction:column;gap:6px}
 .seal .btn{align-self:flex-start;padding:10px 14px;font-size:.85rem}
@@ -415,7 +417,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
    Édition "mobile" conservée pour une éventuelle vitrine sobre dans les stores, plus tard.
    Phases : 1 cœur couple · 2 fil privé entre couples invités (cercle) · 3 fil public · 4 rencontres entre couples (puis webcams). */
 const EDITION = "web";
-const APP_VERSION = "23 · 18 oct. 2026";
+const APP_VERSION = "24 · 18 oct. 2026 · nouvelle charte";
 const PHASE_DEFAULT = 1;
 let PHASE = PHASE_DEFAULT; // remplacé par le mode test des Réglages (S.testPhase)
 const MOBILE = EDITION === "mobile";
@@ -2858,18 +2860,21 @@ document.addEventListener("visibilitychange", () => {
 
 /* Appli web installable (PWA) : manifeste généré, icône vectorielle, invite d'installation.
    Prototype : sans service worker (impossible dans cet aperçu), l'appli finale fonctionnera aussi hors ligne. */
-const ICON = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#141017"/><circle cx="210" cy="256" r="104" fill="#e8698a"/><circle cx="302" cy="256" r="104" fill="#d8b26a" fill-opacity=".85"/></svg>`);
+/* Logo Bothnod « Éclipse » : deux cercles, seule leur zone commune est éclairée (charte du 18 oct. 2026). */
+const MARK = `<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="#E3B7A8" stroke-width="2.5"><circle cx="40" cy="50" r="26"></circle><circle cx="60" cy="50" r="26"></circle></g><path d="M50 26 A26 26 0 0 1 50 74 A26 26 0 0 1 50 26 Z" fill="#C9A46A"></path></svg>`;
+const ICON = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#160F14"/><g transform="translate(56 56) scale(4)"><g fill="none" stroke="#E3B7A8" stroke-width="3"><circle cx="40" cy="50" r="26"/><circle cx="60" cy="50" r="26"/></g><path d="M50 26 A26 26 0 0 1 50 74 A26 26 0 0 1 50 26 Z" fill="#C9A46A"/></g></svg>`);
+const FAVICON = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#160F14"/><g transform="translate(-2 -2) scale(1.04)"><g fill="none" stroke="#E3B7A8" stroke-width="6"><circle cx="40" cy="50" r="26"/><circle cx="60" cy="50" r="26"/></g><path d="M50 26 A26 26 0 0 1 50 74 A26 26 0 0 1 50 26 Z" fill="#C9A46A"/></g></svg>`);
 let DEFER = null;
 const STANDALONE = () => { try{ return matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; }catch(e){ return false; } };
 const IOS = /iphone|ipad|ipod/i.test(navigator.userAgent || "");
 (function setupPwa(){
   try{
     const man = {name:"Bothnod", short_name:"Bothnod", description:"Le double oui, pour les couples.", start_url:location.href, display:"standalone",
-      background_color:"#141017", theme_color:"#141017", icons:[{src:ICON, sizes:"512x512", type:"image/svg+xml", purpose:"any"}]};
+      background_color:"#160F14", theme_color:"#160F14", icons:[{src:ICON, sizes:"512x512", type:"image/svg+xml", purpose:"any"}]};
     const l = document.createElement("link"); l.rel = "manifest";
     l.href = "data:application/manifest+json," + encodeURIComponent(JSON.stringify(man)); document.head.appendChild(l);
     const a = document.createElement("link"); a.rel = "apple-touch-icon"; a.href = ICON; document.head.appendChild(a);
-    const f = document.createElement("link"); f.rel = "icon"; f.href = ICON; document.head.appendChild(f);
+    const f = document.createElement("link"); f.rel = "icon"; f.href = FAVICON; document.head.appendChild(f);
   }catch(e){}
   window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); DEFER = e; if(["welcome","home","settings"].includes(V.view)) render(); });
   window.addEventListener("appinstalled", () => { DEFER = null; render(); });
@@ -2909,7 +2914,7 @@ const VIEWS = {
 welcome(){ return `
   <div class="row" style="justify-content:flex-end">${Object.entries(LANGS).map(([k,l]) => `<button class="tab ${S.lang===k?"on":""}" data-lang="${k}">${l}</button>`).join("")}</div>
   <section class="hero">
-    <div class="mark"><i></i><i></i></div>
+    <div class="mark">${MARK}</div>
     <h1>Bothnod</h1>
     <p class="muted">Chacun répond seul, en privé. L'application ne vous propose que ce que vous avez <em>tous les deux</em> envie de vivre.</p>
     ${MOBILE || !MOBILE_APP ? "" : `<p class="small muted">Déjà répondu sur l'appli mobile ? Créez votre espace, puis importez vos réponses depuis les Réglages.</p>`}
@@ -2928,7 +2933,7 @@ welcome(){ return `
 
 /* ---------- Création du couple ---------- */
 setup(){ return `
-  <div class="topbar"><button class="back" data-go="welcome">← Retour</button><span class="brand">Bothnod</span></div>
+  <div class="topbar"><button class="back" data-go="welcome">← Retour</button><span class="brand logo">${MARK}Bothnod</span></div>
   <h2>Votre espace à deux</h2>
   <p class="muted">Chacun choisit un code à 4 chiffres pour protéger ses réponses. Tapez-le sans que l'autre regarde.</p>
   <form id="setupForm" class="stack" novalidate>
@@ -2986,7 +2991,7 @@ home(){
     ${MOBILE || Date.now() - (S.installHide || 0) < 30*DAY ? "" : installCard(true)}
   </details>`;
   return `
-  <div class="topbar"><span class="brand">Bothnod</span><div class="row">${PLUS() ? `<span class="lockpill">Bothnod+</span>` : `<button class="link" data-go="plus">Bothnod+</button>`}<button class="link" data-go="settings">Réglages</button></div></div>
+  <div class="topbar"><span class="brand logo">${MARK}Bothnod</span><div class="row">${PLUS() ? `<span class="lockpill">Bothnod+</span>` : `<button class="link" data-go="plus">Bothnod+</button>`}<button class="link" data-go="settings">Réglages</button></div></div>
   <h2>${nm(0)} <span class="muted" style="font-style:italic">&amp;</span> ${nm(1)}</h2>
   ${g.done ? `${plannedCard()}${debrief}${accords}${homeExtras()}${daily}${quiz}${more}`
     : `${guideCard(g)}${g.cur > 0 ? quiz : ""}<button class="link" data-act="guideSkip" style="align-self:center">Passer le guide et tout afficher</button>`}
@@ -3044,7 +3049,7 @@ secure(){ const me = S.auth.me; return `
 /* ---------- Verrouillage à l'ouverture ---------- */
 locked(){ const p = S.auth.me; return `
   <section class="hero" style="align-items:center;text-align:center;padding-top:60px">
-    <div class="mark"><i></i><i></i></div>
+    <div class="mark">${MARK}</div>
     <h1>Bothnod</h1>
     <p class="muted">Appli verrouillée. Seul·e ${nm(p)} peut l'ouvrir sur ce téléphone.</p>
   </section>
@@ -3118,7 +3123,7 @@ bonus(){ const p = V.p, b = S.bonus[p]; return `
 
 /* ---------- Fin ---------- */
 finished(){ return `
-  <div class="hero"><div class="mark"><i></i><i></i></div><h1>C'est noté, ${nm(V.p)}.</h1>
+  <div class="hero"><div class="mark">${MARK}</div><h1>C'est noté, ${nm(V.p)}.</h1>
   <p class="muted">Vos réponses sont enregistrées. Passez le téléphone à ${nm(1-V.p)} ou retournez une première carte si vous avez fini tous les deux.</p></div>
   <button class="btn primary block" data-act="lock">Revenir à l'accueil</button>
   <button class="btn ghost block" data-go="profile">Voir mon profil</button>`; },
@@ -3576,7 +3581,7 @@ together(){
   const col = seasonCol(), ready = readyLetters(), sealed = S.letters.filter(l => !l.opened && l.openAt > t).sort((a,b) => a.openAt < b.openAt ? -1 : 1);
   const hist = historyEvents(), y = new Date().getFullYear();
   return `
-  <div class="topbar"><span class="brand">Bothnod</span><button class="link" data-go="settings">Réglages</button></div>
+  <div class="topbar"><span class="brand logo">${MARK}Bothnod</span><button class="link" data-go="settings">Réglages</button></div>
   <h2>Ensemble</h2>
   <p class="muted">Votre agenda, vos lettres, votre histoire. Rien ici n'est obligatoire : revenez quand vous en avez envie.</p>
   ${S.distance.on ? distanceCard() : ""}
