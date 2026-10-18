@@ -399,7 +399,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
    Édition "mobile" conservée pour une éventuelle vitrine sobre dans les stores, plus tard.
    Phases : 1 cœur couple · 2 fil privé entre couples invités (cercle) · 3 fil public · 4 rencontres entre couples (puis webcams). */
 const EDITION = "web";
-const APP_VERSION = "15 · 18 oct. 2026";
+const APP_VERSION = "17 · 18 oct. 2026";
 const PHASE_DEFAULT = 1;
 let PHASE = PHASE_DEFAULT; // remplacé par le mode test des Réglages (S.testPhase)
 const MOBILE = EDITION === "mobile";
@@ -1208,7 +1208,7 @@ function fresh(){ return {couple:null, answers:[{},{}], bonus:[{},{}], revealed:
   plan:"free", ctx:[{},{}], ctxShare:[false,false], lived:[], prog:{}, daily:{}, lang:"fr", country:"FR",
   created:Date.now(), dates:[], keys:[], letters:[], revAt:{}, ansAt:[0,0], reviewAt:[0,0], reviewHide:0, nudge:false, distance:{on:false, until:null}, maps:{},
   testPhase:PHASE_DEFAULT, circle:[], meetWait:false, meetLikes:{}, installHide:0,
-  auth:{mode:"own", me:0, passkey:[null,null], lock:false}, planned:[], mlikes:{}, mcom:{}, demoHidden:[]}; }
+  auth:{mode:"own", me:0, passkey:[null,null], lock:false}, planned:[], mlikes:{}, mcom:{}, demoHidden:[], lvVote:null}; }
 S = Object.assign(fresh(), S);
 if(MOBILE) S.aff = false;
 PHASE = S.testPhase || PHASE_DEFAULT;
@@ -2248,6 +2248,29 @@ const EN = {
 "Public": "Public",
 "Rencontres": "Meet couples",
 "Couples": "Couples",
+"Chacun choisit son intensité": "Each of you picks your intensity",
+"Jusqu'où avez-vous envie d'aller ce soir ?": "How far do you want to go tonight?",
+"Chacun répond en privé, avec son code ou son empreinte. Bothnod retient l'intensité la plus douce des deux : personne ne sait si l'autre voulait aller plus loin.": "Each of you answers privately, with your code or fingerprint. Bothnod keeps the gentler of the two: nobody knows if the other wanted to go further.",
+"Personne n'a encore répondu.": "Nobody has answered yet.",
+"Pas pour ce soir": "Not tonight",
+"On garde cette idée pour une autre fois": "Let's keep this idea for another time",
+"L'un de vous n'en a pas envie ce soir, et c'est très bien ainsi. Personne n'a à se justifier. Et si vous choisissiez quelque chose de tout doux ?": "One of you doesn't feel like it tonight, and that's fine. Nobody has to explain. How about something very gentle?",
+"Recommencer le choix": "Choose again",
+"Revenir à l'accueil": "Back to home",
+"Vous pouvez aussi choisir plus doux.": "You can also choose something gentler.",
+"Votre moment choisi ensemble.": "Your moment, chosen together.",
+"Touchez une intensité pour voir le scénario, puis choisissez-le s'il vous plaît à tous les deux.": "Tap an intensity to see the scenario, then choose it if you both like it.",
+"En privé": "Private",
+"Jusqu'où as-tu envie d'aller ce soir ?": "How far do you want to go tonight?",
+"Pas ce soir": "Not tonight",
+"← Annuler": "← Cancel",
+"Retour à la carte": "Back to the card",
+"← Retour à la carte": "← Back to the card",
+"Double oui": "Double yes",
+"Touchez une intensité pour voir le scénario construit autour de cette carte, puis choisissez-le s'il vous plaît à tous les deux.": "Tap an intensity to see the scenario built around this card, then choose it if you both like it.",
+"Choisir ce moment": "Choose this moment",
+"En le choisissant, vous le retrouvez sur l'accueil, dans votre frise et dans l'agenda si vous le prévoyez.": "Once chosen, you'll find it on your home screen, on your timeline and in the calendar if you plan it.",
+"Touchez une intensité : Bothnod assemble aussitôt une soirée à partir de vos accords communs.": "Tap an intensity: Bothnod instantly puts an evening together from your shared matches.",
 "Exemple": "Sample",
 "Soyez le premier à aimer": "Be the first to like it",
 "Commentaires": "Comments",
@@ -2366,6 +2389,11 @@ const EN_RX = [
  [/^Un moment (.+)$/, (m,l) => tr(l) !== l ? `A ${tr(l)} moment` : m],
  [/^Choisi le (.+?)( · à en parler hors du lit, au calme| · détails dans le moment, rien n'est écrit ici)?$/, (m,d,x) => `Chosen on ${d}` + (x ? (x.includes("parler") ? " · to discuss calmly, outside the bedroom" : " · details in the moment, nothing written here") : "")],
  [/^Choisi ensemble le (.+)\. Ce moment vous attend sur l'accueil et apparaît dans votre frise\.$/, "Chosen together on $1. This moment is waiting on your home screen and appears on your timeline."],
+ [/^(.+) a répondu\. Au tour de (.+)\.$/, "$1 has answered. $2's turn."],
+ [/^Votre intensité commune : (.+)\.$/, (m,l) => `Your shared intensity: ${tr(l)}.`],
+ [/^Avec la carte (.+)\.$/, "With the card $1."],
+ [/^(.+) ne verra pas ta réponse\. Vous découvrirez seulement l'intensité qui vous convient à tous les deux\.$/, "$1 won't see your answer. You'll only discover the intensity that suits you both."],
+ [/^Votre carte · (.+)$/, (m,c) => `Your card · ${tr(c)}`],
  [/^Empreinte de (.+)$/, "$1's fingerprint"],
  [/^Enregistrer l'empreinte de (.+)$/, "Register $1's fingerprint"],
  [/^Confirmer avec l'empreinte \((.+)\)$/, "Confirm with fingerprint ($1)"],
@@ -2830,7 +2858,7 @@ home(){
       <p class="muted small">${m.length ? "Chaque carte est une envie que vous partagez. Retournez-les ensemble, une à une." : "Continuez le questionnaire : les accords apparaissent dès que vos réponses se croisent."}</p>
       <div class="row">
         <button class="btn gold" data-go="deck" ${unrevealed.length?"":"disabled"}>Retourner une carte</button>
-        <button class="btn" data-go="moment" ${m.some(x=>!x.item.risk && x.item.cat!=="ouverture")?"":"disabled"}>Composer un moment</button>
+        <button class="btn" data-act="composeFree" ${m.some(x=>!x.item.risk && x.item.cat!=="ouverture")?"":"disabled"}>Composer un moment</button>
       </div>
       ${locked ? `<p class="small"><span class="lockpill">Bothnod+</span> ${locked} accord${locked>1?"s":""} plus intense${locked>1?"s":""} vous attend${locked>1?"ent":""}. <button class="link" data-go="plus">Découvrir</button></p>` : ""}
       ${S.revealed.length ? `<button class="link" data-go="revealed">${S.revealed.length>1 ? `Voir les ${S.revealed.length} accords déjà découverts` : "Voir l'accord déjà découvert"}</button>` : ""}
@@ -2887,6 +2915,19 @@ pin(){ return `
     ${bioBtn(V.p, V.next)}
     ${pinNote(V.p)}
   </form>`; },
+
+/* ---------- Choix privé de l'intensité ---------- */
+lvPick(){ const p = V.p, v = S.lvVote || {}, it = v.key && v.key !== "free" ? ITEMS[v.key] : null, minL = it ? it.l : 1, cur = (v.v || [])[p];
+  return `
+  <div class="topbar"><button class="back" data-act="lvBack">← Annuler</button><span class="small muted">Espace de ${nm(p)}</span></div>
+  <span class="eyebrow">En privé</span>
+  <h2>Jusqu'où as-tu envie d'aller ce soir ?</h2>
+  ${it ? `<p class="muted">Avec la carte <strong>${esc(it.label)}</strong>.</p>` : ""}
+  <p class="muted small">${nm(1-p)} ne verra pas ta réponse. Vous découvrirez seulement l'intensité qui vous convient à tous les deux.</p>
+  <div class="levels">${LEVELS.filter(L => L.n >= minL).map(L => openLv(L.n)
+    ? `<button class="level ${cur===L.n?"on":""}" data-vote="${L.n}"><b>${L.name}</b><span class="small muted">${L.d}</span>${lvlDots(L.n)}</button>`
+    : `<button class="level" data-go="plus"><b>${L.name}</b><span class="small muted">${L.d}</span><span><span class="lockpill">Bothnod+</span></span></button>`).join("")}</div>
+  <button class="btn ghost block" data-vote="0">Pas ce soir</button>`; },
 
 /* ---------- Verrouillage à l'ouverture ---------- */
 locked(){ const p = S.auth.me; return `
@@ -3024,16 +3065,48 @@ revealed(){
 /* ---------- Composer un moment ---------- */
 moment(){
   const pool = allMatches().filter(m => !m.item.risk && m.item.cat !== "ouverture");
-  const avail = n => pool.some(m => m.item.l <= n);
-  const lv = V.lv || [2,1].find(avail) || [1,2,3,4].find(avail);
+  const cardIt = V.card && ITEMS[V.card] && composable(ITEMS[V.card]) ? ITEMS[V.card] : null;
+  /* Intensité à double oui : chacun choisit en privé jusqu'où il veut aller ; on retient la plus douce des deux */
+  const saved = V.mo && V.mo.pid, key = cardIt ? cardIt.id : "free", minL = cardIt ? cardIt.l : Math.min(...pool.map(m => m.item.l), 4);
+  const vote = saved ? null : (S.lvVote && S.lvVote.key === key ? S.lvVote : null);
+  const voted = !!vote && vote.v[0] != null && vote.v[1] != null;
+  const refused = voted && (vote.v[0] === 0 || vote.v[1] === 0);
+  const agreed = voted && !refused ? Math.max(minL, Math.min(vote.v[0], vote.v[1])) : null;
+  const recap = cardIt ? `<section class="reveal" style="animation:none;padding:16px 18px;gap:8px">
+      <div class="spread"><span class="eyebrow">Votre carte · ${esc(catName(cardIt.cat))}</span>${(m => m ? `<span class="pill s${m.score}">${scoreLabel(m.score)}</span>` : "")(matchOf(cardIt))}</div>
+      <div class="label" style="font-size:1.5rem">${esc(cardIt.label)}</div>
+      ${(m => m ? whoHtml(m) : "")(matchOf(cardIt))}
+      <span class="dbl"><i aria-hidden="true"></i>Double oui</span>
+    </section>` : "";
+  const top = `<div class="topbar">${cardIt ? `<button class="back" data-backcard="${cardIt.id}">← Retour à la carte</button>` : `<button class="back" data-go="home">← Accueil</button>`}</div>
+    <h2>Composer un moment</h2>${recap}`;
+  if(!saved && !voted){ const st = p => vote && vote.v[p] != null; return `${top}
+    <section class="card">
+      <span class="eyebrow">Chacun choisit son intensité</span>
+      <h3>Jusqu'où avez-vous envie d'aller ce soir ?</h3>
+      <p class="muted small">Chacun répond en privé, avec son code ou son empreinte. Bothnod retient l'intensité la plus douce des deux : personne ne sait si l'autre voulait aller plus loin.</p>
+      <div class="row center">${[0,1].map(p => `<button class="btn ${st(p) ? "" : "primary"}" data-pin="${p}" data-next="lvPick">${nm(p)}${st(p) ? " ✓" : ""}</button>`).join("")}</div>
+      <p class="small muted" style="text-align:center">${st(0) || st(1) ? `${nm(st(0) ? 0 : 1)} a répondu. Au tour de ${nm(st(0) ? 1 : 0)}.` : "Personne n'a encore répondu."}</p>
+    </section>`; }
+  if(refused) return `${top}
+    <section class="card soft">
+      <span class="eyebrow">Pas pour ce soir</span>
+      <h3>On garde cette idée pour une autre fois</h3>
+      <p class="muted small">L'un de vous n'en a pas envie ce soir, et c'est très bien ainsi. Personne n'a à se justifier. Et si vous choisissiez quelque chose de tout doux ?</p>
+      <div class="chips">${ALTS.map(a => `<span class="chip">${esc(a)}</span>`).join("")}</div>
+      <div class="row center"><button class="btn gold" data-act="voteReset">Recommencer le choix</button><button class="btn ghost" data-go="home">Revenir à l'accueil</button></div>
+    </section>`;
+  if(agreed && !V.mo){ V.lv = agreed; V.mo = compose(agreed, cardIt ? cardIt.id : null); }
+  const avail = n => agreed ? n >= minL && n <= agreed : cardIt ? n >= cardIt.l : pool.some(m => m.item.l <= n);
+  const lv = V.lv || (cardIt ? cardIt.l : [2,1].find(avail) || [1,2,3,4].find(avail));
   const helps = [0,1].filter(p => S.ctxShare[p]).flatMap(p => CTX.filter(c => S.ctx[p][c.id] === "on").slice(0,2).map(c => `${c.label.toLowerCase()} (${nm(p)})`));
   const avoid = [0,1].filter(p => S.ctxShare[p]).flatMap(p => CTX.filter(c => S.ctx[p][c.id] === "off").slice(0,2).map(c => `${c.label.toLowerCase()} (${nm(p)})`));
   const mo = V.mo;
   return `
-  <div class="topbar"><button class="back" data-go="home">← Accueil</button></div>
-  <h2>Composer un moment</h2>
-  <p class="muted">Choisissez une intensité. Bothnod assemble une soirée à partir de vos accords communs.</p>
-  <div class="levels">${LEVELS.map(L => openLv(L.n) ? `<button class="level ${lv===L.n?"on":""}" data-lv="${L.n}" ${avail(L.n)?"":"disabled"}><b>${L.name}</b><span class="small muted">${L.d}</span>${lvlDots(L.n)}</button>`
+  ${top}
+  ${agreed ? `<p class="banner">Votre intensité commune : <strong>${LEVELS[agreed-1].name}</strong>. Vous pouvez aussi choisir plus doux.</p>` : ""}
+  <p class="muted">${saved ? "Votre moment choisi ensemble." : "Touchez une intensité pour voir le scénario, puis choisissez-le s'il vous plaît à tous les deux."}</p>
+  <div class="levels">${LEVELS.filter(L => !agreed || (L.n >= minL && L.n <= agreed)).map(L => openLv(L.n) ? `<button class="level ${lv===L.n?"on":""}" data-lv="${L.n}" ${avail(L.n)?"":"disabled"}><b>${L.name}</b><span class="small muted">${L.d}</span>${lvlDots(L.n)}</button>`
     : `<button class="level" data-go="plus"><b>${L.name}</b><span class="small muted">${L.d}</span><span><span class="lockpill">Bothnod+</span></span></button>`).join("")}</div>
   ${mo ? `<section class="card">
       <span class="eyebrow">Votre moment · ${LEVELS[mo.lv-1].name}</span>
@@ -3046,12 +3119,14 @@ moment(){
         <div class="step"><div><h4>Après</h4><p>Restez peau contre peau quelques minutes, un verre d'eau, puis chacun dit une chose qu'il a aimée. Le lendemain, un mot doux par message.</p></div></div>
       </div>
       ${mo.pid ? `<p class="banner">Choisi ensemble le ${dshort(isoDay(mo.created || Date.now()))}. Ce moment vous attend sur l'accueil et apparaît dans votre frise.</p>` : ""}
-      <div class="row center"><button class="btn gold" data-act="lived">Nous l'avons vécu</button>${mo.pid ? `<button class="btn" data-act="planMoment">Le prévoir dans l'agenda</button>` : ""}</div>
-      ${mo.pid ? `<button class="link" data-act="dropMoment" style="align-self:center">Retirer ce choix</button>` : ""}
+      ${mo.pid ? `<div class="row center"><button class="btn gold" data-act="lived">Nous l'avons vécu</button><button class="btn" data-act="planMoment">Le prévoir dans l'agenda</button></div>
+      <button class="link" data-act="dropMoment" style="align-self:center">Retirer ce choix</button>`
+      : `<div class="row center"><button class="btn primary" data-act="chooseMoment">Choisir ce moment</button><button class="btn ghost" data-act="compose">Une autre proposition</button></div>
+      <p class="small muted" style="text-align:center">En le choisissant, vous le retrouvez sur l'accueil, dans votre frise et dans l'agenda si vous le prévoyez.</p>`}
       ${S.aff ? shopHtml([COFFRETS[Math.min(mo.lv,3)], ...mo.ids.flatMap(id => affFor(ITEMS[id]))]) : ""}
       ${S.aff ? `<div class="shop"><span class="eyebrow">Pour en faire une vraie sortie</span>${EXPERIENCES[mo.lv].map(e => `<div class="prod"><div><strong>${esc(e.p)}</strong><p class="small muted">${esc(e.w)}</p></div><span class="pill">Réservation à brancher</span></div>`).join("")}</div>` : ""}
     </section>` : ""}
-  ${mo && mo.pid ? "" : footer(`<button class="btn primary" data-act="compose">${mo?"Une autre proposition":"Composer"}</button>`)}`; },
+  ${mo ? "" : footer(`<button class="btn primary" data-act="compose">Composer</button>`)}`; },
 
 /* ---------- Fil ---------- */
 feed(){
@@ -3763,7 +3838,8 @@ function compose(lv, coreId){
   const soft = pool.filter(m => m.item.l === 1 && m.item.id !== core.item.id);
   const extra = under.filter(m => m.item.id !== core.item.id && m.item.cat !== core.item.cat && m.item.l > 1);
   const open = soft.length ? pick(soft) : null;
-  const add = extra.length && lv > 1 ? pick(weighted(extra)) : null;
+  const extraLv = forced && lv > core.item.l ? extra.filter(m => m.item.l === lv) : [];
+  const add = extra.length && lv > 1 ? pick(weighted(extraLv.length ? extraLv : extra)) : null;
   const L = m => `<strong>${esc(m.item.label)}</strong>${roleSentence(m)}`;
   return {
     lv,
@@ -3818,7 +3894,8 @@ function bind(){
     const it = ITEMS[b.dataset.edit], ci = CATS.findIndex(c => c.id === it.cat);
     go("quiz",{p:V.p, ci, ii:CATS[ci].items.indexOf(it), edit:true});
   });
-  $app.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => go("moment",{lv:+b.dataset.lv}));
+  $app.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => { const lv = +b.dataset.lv, card = V.mo && V.mo.pid ? null : V.card;
+    const mo = compose(lv, card); go("moment", {lv, mo, card}); });
   $app.querySelectorAll("[data-show]").forEach(b => b.onclick = () => go("deck",{card:b.dataset.show}));
   $app.querySelectorAll("[data-act]").forEach(b => {
     b.onclick = () => ACT[b.dataset.act]?.();
@@ -3976,6 +4053,9 @@ function bindPhases(){
   if(am) am.onchange = () => { S.auth.me = +am.value; S.auth.lock = S.auth.lock && hasKey(S.auth.me); SESSION.unlocked = false; save(); render(); };
   q("[data-addkey]").forEach(b => b.onclick = async () => { const p = +b.dataset.addkey, k = await registerPasskey(p); if(k){ S.auth.passkey[p] = k; if(isMe(p)) SESSION.unlocked = true; save(); } render(); });
   q("[data-unkey]").forEach(b => b.onclick = () => { const p = +b.dataset.unkey; S.auth.passkey[p] = null; if(isMe(p)){ S.auth.lock = false; SESSION.unlocked = false; } save(); render(); });
+  q("[data-vote]").forEach(b => b.onclick = () => { if(!S.lvVote) return; S.lvVote.v[V.p] = +b.dataset.vote; save();
+    const k = S.lvVote.key; go("moment", {card:k !== "free" ? k : null}); });
+  q("[data-backcard]").forEach(b => b.onclick = () => go("deck", {card:b.dataset.backcard}));
   q("[data-mlike]").forEach(b => b.onclick = () => { const lk = mLikes(b.dataset.mlike); lk[V.p] = !lk[V.p]; save(); albumGo("media", {id:V.id}); });
   q("[data-delcom]").forEach(b => b.onclick = () => { const l = mComs(V.id), i = +b.dataset.delcom; if(l[i] && l[i].by === V.p){ l.splice(i,1); save(); albumGo("media", {id:V.id}); } });
   const cmf = document.getElementById("comForm");
@@ -4061,8 +4141,10 @@ const ACT = {
   lived(){ if(!V.mo) return; S.lived.push({id:"l"+Date.now().toString(36), ids:V.mo.ids, lv:V.mo.lv, title:V.mo.title, date:Date.now(), deb:[false,false]});
     if(V.mo.pid) S.planned = S.planned.filter(x => x.pid !== V.mo.pid); save(); go("home"); },
   composeCard(){ const it = ITEMS[V.card]; if(!it || !composable(it)) return;
-    const mo = compose(it.l, it.id); mo.pid = "c" + Date.now().toString(36); mo.created = Date.now(); mo.card = it.id;
-    S.planned.push(mo); save(); go("moment", {lv:it.l, mo}); },
+    S.lvVote = {key:it.id, v:[null,null], at:Date.now()}; save(); go("moment", {card:it.id}); },
+  composeFree(){ S.lvVote = {key:"free", v:[null,null], at:Date.now()}; save(); go("moment", {}); },
+  voteReset(){ const k = V.card || "free"; S.lvVote = {key:k, v:[null,null], at:Date.now()}; save(); go("moment", {card:V.card}); },
+  lvBack(){ const k = S.lvVote && S.lvVote.key; go("moment", {card:k && k !== "free" ? k : null}); },
   talkCard(){ const it = ITEMS[V.card]; if(!it) return;
     S.planned.push({pid:"t" + Date.now().toString(36), talk:true, card:it.id, lv:it.l, created:Date.now(), title:it.label}); save(); go("home"); },
   planMoment(){ const lv = LEVELS[(V.mo.lv || 1) - 1]; go("agenda", {prefill:`Moment à deux · ${lv ? lv.name : ""}`, link:"p:" + V.mo.pid}); },
@@ -4100,8 +4182,10 @@ const ACT = {
     const m = pick(w); S.revealed.push(m.item.id); S.revAt[m.item.id] = Date.now(); save(); go("deck",{card:m.item.id});
   },
   compose(){ const pool = allMatches().filter(m => !m.item.risk && m.item.cat !== "ouverture" && openLv(m.item.l)); if(!pool.length) return;
-    const lv = V.lv || [2,1,3,4].find(n => pool.some(m => m.item.l <= n));
-    go("moment",{lv, mo:compose(lv)}); },
+    const card = V.mo && V.mo.pid ? null : V.card, lv = V.lv || (card ? ITEMS[card].l : [2,1,3,4].find(n => pool.some(m => m.item.l <= n)));
+    go("moment",{lv, mo:compose(lv, card), card}); },
+  chooseMoment(){ const mo = V.mo; if(!mo || mo.pid) return; mo.pid = "c" + Date.now().toString(36); mo.created = Date.now(); mo.card = V.card || null;
+    S.planned.push(mo); S.lvVote = null; save(); go("moment", {lv:mo.lv, mo}); },
   askreset(){ go("settings",{confirm:true}); },
   async reset(){ await MDB.clear(); revokeAll(); MEDIA = []; S = fresh(); PHASE = S.testPhase; save(); go("welcome"); },
   unreveal(){ S.revealed = []; save(); go("home"); },
