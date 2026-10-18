@@ -201,6 +201,22 @@ textarea{min-height:84px;resize:vertical}
 .footer-actions{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 70%,transparent);display:flex;justify-content:center}
 .footer-actions > div{width:100%;max-width:408px;display:flex;gap:10px}
 .footer-actions .btn{flex:1}
+.gsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.gsteps li{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start}
+.gsteps li > div{display:flex;flex-direction:column;gap:8px;min-width:0}
+.gnum{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted);font-weight:700;font-size:.85rem}
+.gsteps li.cur .gnum{border-color:var(--rose);color:var(--rose)}
+.gsteps li.ok .gnum{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.gsteps li.ok b{color:var(--muted);text-decoration:line-through}
+.guide{border-color:color-mix(in srgb,var(--rose) 55%,var(--line))}
+.qrow{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:4px 10px;align-items:center}
+.qrow b{min-width:52px;overflow-wrap:anywhere}
+.more summary{font-weight:600;list-style:none;display:flex;justify-content:space-between}
+.more summary::after{content:"+";color:var(--muted);font-weight:700}
+.more[open] summary::after{content:"–"}
+.shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sc{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--fg);font:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
+.sc:hover{background:var(--surface-2)}
 .row.center{justify-content:center}
 .row.center > .btn{flex:1;min-width:130px}
 /* Album */
@@ -399,7 +415,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
    Édition "mobile" conservée pour une éventuelle vitrine sobre dans les stores, plus tard.
    Phases : 1 cœur couple · 2 fil privé entre couples invités (cercle) · 3 fil public · 4 rencontres entre couples (puis webcams). */
 const EDITION = "web";
-const APP_VERSION = "20 · 18 oct. 2026";
+const APP_VERSION = "21 · 18 oct. 2026";
 const PHASE_DEFAULT = 1;
 let PHASE = PHASE_DEFAULT; // remplacé par le mode test des Réglages (S.testPhase)
 const MOBILE = EDITION === "mobile";
@@ -2250,6 +2266,24 @@ const EN = {
 "Public": "Public",
 "Rencontres": "Meet couples",
 "Couples": "Couples",
+"Questionnaire": "Questionnaire",
+"Complet": "Complete",
+"Profil": "Profile",
+"Et aussi": "And also",
+"Invitations, check-in, pense-bêtes": "Invitations, check-in, reminders",
+"Photos privées, cœurs et commentaires": "Private photos, likes and comments",
+"Agenda, lettres, frise": "Calendar, letters, timeline",
+"Votre signal de sécurité, valable pour tous vos moments. Bouche empêchée : trois tapes ou un objet que l'on lâche.": "Your safety signal, valid for all your moments. If speech is blocked: three taps or dropping an object.",
+"Passer le guide et tout afficher": "Skip the guide and show everything",
+"Chacun répond au questionnaire": "Each of you answers the questionnaire",
+"Retournez vos premières cartes": "Turn over your first cards",
+"Choisissez votre premier moment": "Choose your first moment",
+"Installez-vous côte à côte. Chaque carte est une envie que vous avez cochée tous les deux.": "Sit side by side. Each card is a desire you both ticked.",
+"À partir d'une carte, chacun choisit en privé son intensité, et Bothnod vous propose un scénario.": "From a card, each of you privately picks an intensity, and Bothnod suggests a scenario.",
+"Pas encore d'accord commun : répondez à d'autres catégories, les cartes apparaîtront dès que vos envies se croisent.": "No shared match yet: answer more categories, cards will appear as soon as your desires meet.",
+"Choisir une de nos cartes": "Pick one of our cards",
+"Laisser Bothnod proposer": "Let Bothnod suggest",
+"Revoir le démarrage guidé": "See the getting-started guide again",
 "Changer la date": "Change the date",
 "Autre scénario": "Another scenario",
 "Ton choix actuel": "Your current choice",
@@ -2410,6 +2444,10 @@ const EN_RX = [
  [/^Cette carte commence en (.+)$/, (m,l) => `This card starts at ${tr(l)}`],
  [/^Touche une intensité pour voir le scénario\. (.+) ne verra pas ta réponse : vous découvrirez seulement l'intensité qui vous convient à tous les deux\.$/, "Tap an intensity to see the scenario. $1 won't see your answer: you'll only discover the intensity that suits you both."],
  [/^Si (.+) choisit plus doux, c'est son intensité qui sera retenue, sans que tu saches laquelle était la sienne\.$/, "If $1 picks something gentler, theirs will be kept, without you knowing which one was theirs."],
+ [/^Pour bien commencer · étape (\d) sur 3$/, "Getting started · step $1 of 3"],
+ [/^En privé, à votre rythme\. (\d+) réponses chacun suffisent pour découvrir vos premiers accords\.$/, "In private, at your own pace. $1 answers each are enough to discover your first matches."],
+ [/^(\d+) non lus?$/, "$1 unread"],
+ [/^(\d+) parcours pour avancer à deux$/, "$1 programmes to grow together"],
  [/^Votre carte · (.+)$/, (m,c) => `Your card · ${tr(c)}`],
  [/^Empreinte de (.+)$/, "$1's fingerprint"],
  [/^Enregistrer l'empreinte de (.+)$/, "Register $1's fingerprint"],
@@ -2595,6 +2633,29 @@ function stepsHtml(mo){ const {helps, avoid} = ctxLines(); return `<div class="s
     <div class="step"><div><h4>Le cœur du moment</h4><p>${mo.core}</p></div></div>
     <div class="step"><div><h4>Après</h4><p>Restez peau contre peau quelques minutes, un verre d'eau, puis chacun dit une chose qu'il a aimée. Le lendemain, un mot doux par message.</p></div></div>
   </div>`; }
+/* Démarrage guidé : trois étapes, calculées à partir de l'état (pas de case à cocher) */
+const GMIN = Math.min(20, TOTAL);
+function guide(unrevealed){
+  const s1 = done(0) >= GMIN && done(1) >= GMIN;
+  const s2 = S.revealed.length >= 3 || (S.revealed.length > 0 && !unrevealed.length);
+  const s3 = S.planned.length > 0 || S.lived.length > 0;
+  const steps = [s1, s2, s3], cur = steps.findIndex(x => !x);
+  return {steps, cur: cur < 0 ? 3 : cur, done: cur < 0 || !!S.guideSkip, unrevealed};
+}
+function guideCard(g){
+  const T = [
+    {t:"Chacun répond au questionnaire", d:`En privé, à votre rythme. ${GMIN} réponses chacun suffisent pour découvrir vos premiers accords.`},
+    {t:"Retournez vos premières cartes", d:"Installez-vous côte à côte. Chaque carte est une envie que vous avez cochée tous les deux."},
+    {t:"Choisissez votre premier moment", d:"À partir d'une carte, chacun choisit en privé son intensité, et Bothnod vous propose un scénario."},
+  ];
+  const cta = i => i === 0 ? `<div class="row center">${[0,1].map(p => { const d = done(p), ok = d >= GMIN; return `<button class="btn ${ok ? "" : "primary"}" data-pin="${p}" data-next="cats">${nm(p)}${ok ? " ✓" : d ? ` · ${d}/${GMIN}` : ""}</button>`; }).join("")}</div>`
+    : i === 1 ? (g.unrevealed.length ? `<button class="btn gold block" data-go="deck">Retourner une carte</button>` : `<p class="small muted">Pas encore d'accord commun : répondez à d'autres catégories, les cartes apparaîtront dès que vos envies se croisent.</p><div class="row center">${[0,1].map(p => `<button class="btn" data-pin="${p}" data-next="cats">${nm(p)}</button>`).join("")}</div>`)
+    : `<div class="row center">${S.revealed.length ? `<button class="btn primary" data-go="revealed">Choisir une de nos cartes</button>` : ""}<button class="btn" data-act="composeFree">Laisser Bothnod proposer</button></div>`;
+  return `<section class="card guide">
+    <span class="eyebrow">Pour bien commencer · étape ${Math.min(g.cur + 1, 3)} sur 3</span>
+    <ol class="gsteps">${T.map((x,i) => `<li class="${g.steps[i] ? "ok" : i === g.cur ? "cur" : ""}"><span class="gnum">${g.steps[i] ? "✓" : i + 1}</span><div><b>${x.t}</b>${i === g.cur ? `<p class="small muted">${x.d}</p>${cta(i)}` : ""}</div></li>`).join("")}</ol>
+  </section>`;
+}
 function plannedCard(){
   if(!S.planned.length) return "";
   return `<section class="card" style="border-color:var(--rose)">
@@ -2879,71 +2940,48 @@ home(){
   const all = allMatches(), m = all.filter(x => openLv(x.item.l)), unrevealed = m.filter(x => !S.revealed.includes(x.item.id));
   const locked = all.filter(x => !openLv(x.item.l) && !S.revealed.includes(x.item.id)).length;
   const pendingDeb = [0,1].filter(p => S.lived.some(l => !l.deb[p]));
-  const monthLived = S.lived.filter(l => Date.now() - l.date < 30*864e5).length;
   const today = new Date().toISOString().slice(0,10), card = dailyCard();
-  const ready = done(0) > 0 && done(1) > 0;
-  return `
-  <div class="topbar"><span class="brand">Bothnod</span><div class="row">${PLUS() ? `<span class="lockpill">Bothnod+</span>` : `<button class="link" data-go="plus">Bothnod+</button>`}<button class="link" data-go="settings">Réglages</button></div></div>
-  <h2>${nm(0)} <span class="muted" style="font-style:italic">&amp;</span> ${nm(1)}</h2>
-  <div class="partners">
-    ${[0,1].map(p => { const d = done(p), pct = Math.round(d/TOTAL*100); return `
-    <div class="partner">
-      <div class="name">${nm(p)}</div>
-      <div class="bar"><span style="width:${pct}%"></span></div>
-      <span class="small muted">${d} / ${TOTAL} réponses</span>
-      <button class="btn ${d<TOTAL?"primary":""}" data-pin="${p}" data-next="cats">${d===0?"Répondre":d<TOTAL?"Continuer":"Modifier"}</button>
-      <button class="btn ghost" data-pin="${p}" data-next="profile">Mon profil</button>
-    </div>`;}).join("")}
-  </div>
-  <section class="card">
+  const canCompose = m.some(x => !x.item.risk && x.item.cat !== "ouverture");
+  const g = guide(unrevealed);
+  const quiz = `<section class="card qz">
+    <div class="spread"><span class="eyebrow">Questionnaire</span>${done(0) >= TOTAL && done(1) >= TOTAL ? `<span class="status live">Complet</span>` : ""}</div>
+    ${[0,1].map(p => { const d = done(p); return `<div class="qrow"><b>${nm(p)}</b><div class="bar"><span style="width:${Math.round(d/TOTAL*100)}%"></span></div>
+      <span class="small muted">${d} / ${TOTAL}</span><button class="link" data-pin="${p}" data-next="cats">${d===0?"Répondre":d<TOTAL?"Continuer":"Modifier"}</button><button class="link" data-pin="${p}" data-next="profile">Profil</button></div>`; }).join("")}
+  </section>`;
+  const accords = `<section class="card">
     <span class="eyebrow">Vos accords</span>
-    ${ready ? `
-      <h3>${unrevealed.length ? `${unrevealed.length} accord${unrevealed.length>1?"s":""} à découvrir` : m.length ? "Tous vos accords sont découverts" : "Pas encore d'accord"}</h3>
-      <p class="muted small">${m.length ? "Chaque carte est une envie que vous partagez. Retournez-les ensemble, une à une." : "Continuez le questionnaire : les accords apparaissent dès que vos réponses se croisent."}</p>
-      <div class="row">
-        <button class="btn gold" data-go="deck" ${unrevealed.length?"":"disabled"}>Retourner une carte</button>
-        <button class="btn" data-act="composeFree" ${m.some(x=>!x.item.risk && x.item.cat!=="ouverture")?"":"disabled"}>Composer un moment</button>
-      </div>
-      ${locked ? `<p class="small"><span class="lockpill">Bothnod+</span> ${locked} accord${locked>1?"s":""} plus intense${locked>1?"s":""} vous attend${locked>1?"ent":""}. <button class="link" data-go="plus">Découvrir</button></p>` : ""}
-      ${S.revealed.length ? `<button class="link" data-go="revealed">${S.revealed.length>1 ? `Voir les ${S.revealed.length} accords déjà découverts` : "Voir l'accord déjà découvert"}</button>` : ""}
-      ${done(0)<TOTAL || done(1)<TOTAL ? `<p class="small muted">Plus vous répondez, plus les propositions sont riches.</p>` : ""}
-    ` : `<h3>En attente de vos réponses</h3><p class="muted small">Les accords s'affichent quand vous avez commencé le questionnaire tous les deux.</p>`}
-  </section>
-  ${plannedCard()}
-  ${homeExtras()}
-  ${MOBILE || Date.now() - (S.installHide || 0) < 30*DAY ? "" : installCard(true)}
-  ${pendingDeb.length ? `<section class="card" style="border-color:var(--gold)">
-    <span class="eyebrow">Bilan de votre dernier moment</span>
-    <p class="muted small">Chacun dit en privé ce qu'il en a pensé. Vos propositions s'ajustent, sans que l'autre voie votre bilan.</p>
-    <div class="row">${pendingDeb.map(p => `<button class="btn gold" data-pin="${p}" data-next="debrief">Bilan de ${nm(p)}</button>`).join("")}</div>
-  </section>` : ""}
-  <section class="conn">
+    <h3>${unrevealed.length ? `${unrevealed.length} accord${unrevealed.length>1?"s":""} à découvrir` : m.length ? "Tous vos accords sont découverts" : "Pas encore d'accord"}</h3>
+    <div class="row center"><button class="btn gold" data-go="deck" ${unrevealed.length?"":"disabled"}>Retourner une carte</button><button class="btn" data-act="composeFree" ${canCompose?"":"disabled"}>Composer un moment</button></div>
+    ${locked ? `<p class="small"><span class="lockpill">Bothnod+</span> ${locked} accord${locked>1?"s":""} plus intense${locked>1?"s":""} vous attend${locked>1?"ent":""}. <button class="link" data-go="plus">Découvrir</button></p>` : ""}
+    ${S.revealed.length ? `<button class="link" data-go="revealed" style="align-self:flex-start">${S.revealed.length>1 ? `Voir les ${S.revealed.length} accords déjà découverts` : "Voir l'accord déjà découvert"}</button>` : ""}
+  </section>`;
+  const daily = `<section class="conn">
     <div class="spread"><span class="eyebrow">Carte du jour · ${esc(card.k)}</span>${S.daily[today] ? `<span class="status live">Fait</span>` : ""}</div>
     <p class="t">${esc(card.t)}</p>
     <div class="row">${S.daily[today] ? "" : `<button class="btn gold" data-act="dailyDone">C'est fait</button>`}${S.distance.on ? `<button class="btn ghost" data-go="distance">Rituels à distance</button>` : `<button class="btn ghost" data-go="${PLUS() ? "connect" : "plus"}">${PLUS() ? "Toutes les cartes" : "Plus de cartes avec Bothnod+"}</button>`}</div>
-  </section>
-  <section class="card">
-    <span class="eyebrow">Programmes guidés</span>
-    <h3>${PROGRAMS.length} parcours pour avancer à deux</h3>
-    <p class="muted small">Quelques étapes par semaine : rituels, toucher sans objectif, conversations. ${monthLived ? `${monthLived} moment${monthLived>1?"s":""} vécu${monthLived>1?"s":""} ce mois-ci.` : ""}</p>
-    <div class="row"><button class="btn" data-go="programs">Voir les programmes</button></div>
-  </section>
-  ${MOBILE ? `<section class="card">
-    <span class="eyebrow">Bothnod sur le web</span>
-    <h3>Le questionnaire complet et votre espace à deux</h3>
-    <p class="muted small">Sur le web : toutes les intensités, une messagerie rien qu'à vous et un album privé. Vos réponses vous suivent grâce à votre code de synchronisation.</p>
-    <div class="row"><button class="btn" data-go="settings">Mon code de synchronisation</button></div>
-  </section>` : `<section class="card">
-    <span class="eyebrow">Entre nous</span>
-    <h3>${unread(0)+unread(1) ? `${unread(0)+unread(1)} message${unread(0)+unread(1)>1?"s":""} non lu${unread(0)+unread(1)>1?"s":""}` : "Messagerie et pense-bêtes"}</h3>
-    <p class="muted small">Invitations par carte, check-in du jour et liste partagée. Chacun l'ouvre avec son code.</p>
-    <div class="row"><button class="btn" data-go="msgPin">Ouvrir la messagerie</button><button class="btn ghost" data-go="albumPin">Notre album</button></div>
-  </section>`}
-  <section class="card">
-    <span class="eyebrow">Votre signal de sécurité</span>
+  </section>`;
+  const debrief = pendingDeb.length ? `<section class="card" style="border-color:var(--gold)">
+    <span class="eyebrow">Bilan de votre dernier moment</span>
+    <p class="muted small">Chacun dit en privé ce qu'il en a pensé. Vos propositions s'ajustent, sans que l'autre voie votre bilan.</p>
+    <div class="row">${pendingDeb.map(p => `<button class="btn gold" data-pin="${p}" data-next="debrief">Bilan de ${nm(p)}</button>`).join("")}</div>
+  </section>` : "";
+  const more = `<details class="card more">
+    <summary>Et aussi</summary>
+    <div class="shortcuts">
+      <button class="sc" data-go="programs"><b>Programmes guidés</b><span class="small muted">${PROGRAMS.length} parcours pour avancer à deux</span></button>
+      <button class="sc" data-go="msgPin"><b>Messagerie</b><span class="small muted">${unread(0)+unread(1) ? `${unread(0)+unread(1)} non lu${unread(0)+unread(1)>1?"s":""}` : "Invitations, check-in, pense-bêtes"}</span></button>
+      <button class="sc" data-go="albumPin"><b>Notre album</b><span class="small muted">Photos privées, cœurs et commentaires</span></button>
+      <button class="sc" data-go="together"><b>Ensemble</b><span class="small muted">Agenda, lettres, frise</span></button>
+    </div>
     <div class="safe"><div class="g">Vert<br>on continue</div><div class="o">Orange<br>on ralentit</div><div class="r">Rouge<br>on arrête</div></div>
-    <p class="small muted">Valable pour tous vos moments. Bouche empêchée : trois tapes ou un objet que l'on lâche.</p>
-  </section>
+    <p class="small muted">Votre signal de sécurité, valable pour tous vos moments. Bouche empêchée : trois tapes ou un objet que l'on lâche.</p>
+    ${MOBILE || Date.now() - (S.installHide || 0) < 30*DAY ? "" : installCard(true)}
+  </details>`;
+  return `
+  <div class="topbar"><span class="brand">Bothnod</span><div class="row">${PLUS() ? `<span class="lockpill">Bothnod+</span>` : `<button class="link" data-go="plus">Bothnod+</button>`}<button class="link" data-go="settings">Réglages</button></div></div>
+  <h2>${nm(0)} <span class="muted" style="font-style:italic">&amp;</span> ${nm(1)}</h2>
+  ${g.done ? `${plannedCard()}${debrief}${accords}${homeExtras()}${daily}${quiz}${more}`
+    : `${guideCard(g)}${g.cur > 0 ? quiz : ""}<button class="link" data-act="guideSkip" style="align-self:center">Passer le guide et tout afficher</button>`}
   ${tabbar("home")}`; },
 
 /* ---------- Code secret ---------- */
@@ -3803,6 +3841,7 @@ settings(){ return `
     <p class="small muted">Espagnol, italien et allemand : traductions à venir, l'anglais est utilisé en attendant.</p>
   </div>
   <div class="card">
+    <button class="link" data-act="guideShow" style="align-self:flex-start">Revoir le démarrage guidé</button>
     <h3>Mode test : phase de lancement</h3>
     <p class="muted small">Pour essayer chaque étape du lancement. Dans l'appli réelle, chaque phase s'ouvre après son feu vert juridique et technique.</p>
     <div class="opts">${PHASES.map(x => `<button class="opt ${PHASE===x.n?"on":""}" data-phase="${x.n}" aria-pressed="${PHASE===x.n}">${x.n}. ${esc(x.name)}<br><span class="small muted" style="font-weight:400">${esc(x.d)}</span></button>`).join("")}</div>
@@ -4222,6 +4261,8 @@ const ACT = {
   ageOk(){ S.ageOk = true; SESSION.ageAt = Date.now(); save(); go("feed"); },
   async install(){ if(!DEFER) return; DEFER.prompt(); try{ await DEFER.userChoice; }catch(e){} DEFER = null; render(); },
   installLater(){ S.installHide = Date.now(); save(); render(); },
+  guideSkip(){ S.guideSkip = true; save(); render(); },
+  guideShow(){ S.guideSkip = false; save(); go("home"); },
   toggleOpen(){ S.testOpen = !S.testOpen; save(); render(); },
   toggleLock(){ if(!hasKey(S.auth.me)) return; S.auth.lock = !S.auth.lock; save(); render(); },
   forgetAge(){ S.ageOk = false; SESSION.ageAt = 0; save(); render(); },
