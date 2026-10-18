@@ -415,7 +415,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
    Édition "mobile" conservée pour une éventuelle vitrine sobre dans les stores, plus tard.
    Phases : 1 cœur couple · 2 fil privé entre couples invités (cercle) · 3 fil public · 4 rencontres entre couples (puis webcams). */
 const EDITION = "web";
-const APP_VERSION = "21 · 18 oct. 2026";
+const APP_VERSION = "23 · 18 oct. 2026";
 const PHASE_DEFAULT = 1;
 let PHASE = PHASE_DEFAULT; // remplacé par le mode test des Réglages (S.testPhase)
 const MOBILE = EDITION === "mobile";
@@ -1217,7 +1217,8 @@ const MAX_MB = 200;
    ========================================================= */
 const KEY = "accords.v1";
 let S = load() || fresh();
-let V = {view: S.couple ? (S.auth && S.auth.lock && S.auth.mode === "own" && S.auth.passkey && S.auth.passkey[S.auth.me] ? "locked" : "home") : "welcome"}; // état d'interface (non stocké)
+let V = {view: S.couple ? (S.auth && S.auth.lock && S.auth.mode === "own" && S.auth.passkey && S.auth.passkey[S.auth.me] ? "locked"
+  : S.auth && !(S.auth.passkey && S.auth.passkey[S.auth.me || 0]) && Date.now() - (S.secureLater || 0) > 7*864e5 ? "secure" : "home") : "welcome"}; // état d'interface (non stocké)
 function fresh(){ return {couple:null, answers:[{},{}], bonus:[{},{}], revealed:[], demo:false, aff:!MOBILE,
   posts:[], pub:{pseudo:"", idv:[false,false]}, ageOk:false, liked:{}, reported:{}, pause:false,
   msgs:[], notes:[], read:[0,0],
@@ -2266,6 +2267,13 @@ const EN = {
 "Public": "Public",
 "Rencontres": "Meet couples",
 "Couples": "Couples",
+"Prendre une photo": "Take a photo",
+"Filmer": "Record video",
+"Choisir dans la galerie": "Choose from gallery",
+"Protégez Bothnod avec votre empreinte": "Protect Bothnod with your fingerprint",
+"Votre empreinte ou Face ID sera demandé à chaque ouverture de l'appli. Personne d'autre ne pourra l'ouvrir sur ce téléphone, et vous n'aurez aucun code à retenir.": "Your fingerprint or Face ID will be asked each time you open the app. Nobody else can open it on this phone, and there's no code to remember.",
+"Activer l'empreinte": "Turn on fingerprint",
+"Votre empreinte ne quitte jamais votre téléphone : Bothnod reçoit seulement la confirmation que c'est bien vous. Vous pourrez la retirer dans les Réglages.": "Your fingerprint never leaves your phone: Bothnod only gets confirmation that it's you. You can remove it in Settings.",
 "Questionnaire": "Questionnaire",
 "Complet": "Complete",
 "Profil": "Profile",
@@ -3021,6 +3029,18 @@ lvPick(){ const p = V.p, v = S.lvVote || {}, it = v.key && v.key !== "free" ? IT
     </section>` : `<p class="small muted" style="text-align:center">Aucune intensité sélectionnée pour l'instant.</p>`}
   <button class="btn ghost block" data-vote="0">Pas ce soir</button>`; },
 
+/* ---------- Empreinte par défaut : proposée dès la création de l'espace ---------- */
+secure(){ const me = S.auth.me; return `
+  <section class="hero" style="align-items:center;text-align:center;padding-top:36px">
+    <div class="bio-fp" aria-hidden="true"></div>
+    <h2>Protégez Bothnod avec votre empreinte</h2>
+    <p class="muted">Votre empreinte ou Face ID sera demandé à chaque ouverture de l'appli. Personne d'autre ne pourra l'ouvrir sur ce téléphone, et vous n'aurez aucun code à retenir.</p>
+  </section>
+  <label class="f">Ce téléphone est celui de<select id="secMe">${[0,1].map(p => `<option value="${p}" ${me===p?"selected":""}>${nm(p)}</option>`).join("")}</select></label>
+  <button class="btn primary block" data-act="secureOn">Activer l'empreinte</button>
+  <button class="link" data-act="secureLater" style="align-self:center">Plus tard</button>
+  <p class="small muted" style="text-align:center">Votre empreinte ne quitte jamais votre téléphone : Bothnod reçoit seulement la confirmation que c'est bien vous. Vous pourrez la retirer dans les Réglages.</p>`; },
+
 /* ---------- Verrouillage à l'ouverture ---------- */
 locked(){ const p = S.auth.me; return `
   <section class="hero" style="align-items:center;text-align:center;padding-top:60px">
@@ -3323,7 +3343,10 @@ album(){
     </section>` : ""; }).join("")}
   ${MDB.ok ? "" : `<div class="banner">Ce navigateur bloque le stockage : les médias disparaîtront à la fermeture de la page.</div>`}
   <input type="file" id="upl" accept="image/*,video/*" multiple hidden>
-  <button class="btn primary block" data-act="pick">Ajouter des photos ou vidéos</button>
+  <input type="file" id="uplCam" accept="image/*" capture="environment" hidden>
+  <input type="file" id="uplVid" accept="video/*" capture="environment" hidden>
+  <div class="row center"><button class="btn primary" data-act="camPhoto">Prendre une photo</button><button class="btn" data-act="camVideo">Filmer</button></div>
+  <button class="btn ghost block" data-act="pick">Choisir dans la galerie</button>
   <button class="toggle" role="switch" aria-checked="${blur}" data-act="blur"><span><strong>Flou de discrétion</strong><br><span class="small muted">Les vignettes restent floues tant qu'on ne les ouvre pas.</span></span><span class="sw"></span></button>
   ${ch.length ? `<section class="card"><span class="eyebrow">Défis à deux</span>
     ${ch.map(i => `<div class="chal"><p><span class="small muted">${esc(i.label)}</span><br>${esc(chalText(i))}</p><button class="btn gold" data-chal="${i.id}">Relever</button></div>`).join("")}
@@ -4004,7 +4027,7 @@ function bind(){
       : !/^\d{4}$/.test(g("p0")) || !/^\d{4}$/.test(g("p1")) ? "Chaque code doit contenir exactement 4 chiffres."
       : !document.getElementById("adult").checked || !document.getElementById("alone").checked ? "Cochez les deux engagements pour continuer." : "";
     if(msg){ err.textContent = msg; err.hidden = false; return; }
-    const open = OPEN(); S = fresh(); S.testOpen = open; S.testPhase = PHASE; S.couple = {names:[g("n0"),g("n1")], pins:[g("p0"),g("p1")]}; save(); go("home");
+    const open = OPEN(); S = fresh(); S.testOpen = open; S.testPhase = PHASE; S.couple = {names:[g("n0"),g("n1")], pins:[g("p0"),g("p1")]}; save(); go("secure");
   };
   const pf = document.getElementById("pinForm");
   if(pf){ const inp = document.getElementById("pinIn"); inp.focus();
@@ -4050,15 +4073,15 @@ function bind(){
     inp.oninput = () => { if(inp.value.length === 4) af.requestSubmit(); };
   }
   $app.querySelectorAll("[data-media]").forEach(b => b.onclick = () => albumGo("media",{id:b.dataset.media}));
-  $app.querySelectorAll("[data-chal]").forEach(b => b.onclick = () => { V.challenge = b.dataset.chal; document.getElementById("upl").click(); });
-  const upl = document.getElementById("upl");
+  $app.querySelectorAll("[data-chal]").forEach(b => b.onclick = () => { V.challenge = b.dataset.chal; document.getElementById("uplCam").click(); });
+  ["upl","uplCam","uplVid"].forEach(idu => { const upl = document.getElementById(idu);
   if(upl) upl.onchange = () => {
     const files = [...upl.files].filter(f => /^(image|video)\//.test(f.type));
     if(!files.length) return;
     if(!PLUS() && realCount() + files.length > FREE_MEDIA){ revokeAll(); go("plus"); return; }
     files.forEach(f => f._url = URL.createObjectURL(f));
     albumGo("compose",{files, challenge:V.challenge});
-  };
+  }; });
   const cf = document.getElementById("composeForm");
   if(cf) cf.onsubmit = async e => { e.preventDefault();
     const big = V.files.find(f => f.size > MAX_MB*1024*1024), err = document.getElementById("compErr");
@@ -4222,8 +4245,10 @@ function bindTogether(){
 }
 function albumGo(view, extra={}){ go(view, {p:V.p, clear:V.clear, ...extra}); }
 const ACT = {
-  demo(){ S = demoState(); save(); go("home"); },
+  demo(){ S = demoState(); save(); go("secure"); },
   pick(){ V.challenge = null; document.getElementById("upl").click(); },
+  camPhoto(){ V.challenge = null; document.getElementById("uplCam").click(); },
+  camVideo(){ V.challenge = null; document.getElementById("uplVid").click(); },
   blur(){ V.clear = !V.clear; render(); },
   closeAlbum(){ revokeAll(); go("home"); },
   backAlbum(){ (V.files||[]).forEach(f => f._url && URL.revokeObjectURL(f._url)); albumGo("album"); },
@@ -4263,6 +4288,10 @@ const ACT = {
   installLater(){ S.installHide = Date.now(); save(); render(); },
   guideSkip(){ S.guideSkip = true; save(); render(); },
   guideShow(){ S.guideSkip = false; save(); go("home"); },
+  async secureOn(){ const sel = document.getElementById("secMe"); if(sel) S.auth.me = +sel.value; S.auth.mode = "own";
+    const k = await registerPasskey(S.auth.me); if(!k) return;
+    S.auth.passkey[S.auth.me] = k; S.auth.lock = true; SESSION.unlocked = true; save(); go("home"); },
+  secureLater(){ S.secureLater = Date.now(); save(); go("home"); },
   toggleOpen(){ S.testOpen = !S.testOpen; save(); render(); },
   toggleLock(){ if(!hasKey(S.auth.me)) return; S.auth.lock = !S.auth.lock; save(); render(); },
   forgetAge(){ S.ageOk = false; SESSION.ageAt = 0; save(); render(); },
