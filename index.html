@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Cache-Control" content="no-cache">
 <style>html,body{margin:0;padding:0;background:#141017}</style>
 </head>
 <body>
@@ -200,11 +201,21 @@ textarea{min-height:84px;resize:vertical}
 .footer-actions{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 70%,transparent);display:flex;justify-content:center}
 .footer-actions > div{width:100%;max-width:408px;display:flex;gap:10px}
 .footer-actions .btn{flex:1}
+.row.center{justify-content:center}
+.row.center > .btn{flex:1;min-width:130px}
 /* Album */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 .thumb{position:relative;aspect-ratio:1;max-width:100%;border-radius:8px;overflow:hidden;background:var(--surface-2);border:0;padding:0;cursor:pointer}
 .thumb img,.thumb video{width:100%;height:100%;object-fit:cover;display:block;transition:filter .2s ease}
 .blur .thumb img,.blur .thumb video{filter:blur(16px) saturate(.5)}
+.thumb .meta{position:absolute;right:6px;bottom:6px;display:flex;gap:6px;font-size:.7rem;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.likebar{display:flex;align-items:center;gap:10px}
+.likebar .heart{background:none;border:0;font-size:1.7rem;line-height:1;cursor:pointer;color:var(--fg);padding:4px}
+.likebar .heart.on{color:var(--rose)}
+.likebar .heart.pop{animation:pop .3s ease}
+.com{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:10px}
+.com:first-child{border-top:0;padding-top:0}
+.com p{overflow-wrap:anywhere}
 .thumb .tag{position:absolute;left:6px;bottom:6px;font-size:.68rem;font-weight:600;background:rgba(20,16,23,.75);color:var(--fg);padding:2px 7px;border-radius:6px}
 .viewer img,.viewer video{width:100%;max-width:100%;border-radius:14px;max-height:68vh;object-fit:contain;background:#000;display:block}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;color:var(--fg);font:inherit;width:100%;text-align:left}
@@ -226,7 +237,8 @@ textarea{min-height:84px;resize:vertical}
 .tabbar button i{width:6px;height:6px;border-radius:50%;background:transparent}
 .tabbar button.on i{background:var(--rose)}
 .tabbar .badge{background:var(--rose);color:var(--rose-ink);border-radius:99px;padding:0 6px;font-size:.68rem;margin-left:4px}
-.tabbar button{min-width:0}
+.tabbar button{min-width:0;position:relative}
+.tabbar button > .badge{position:absolute;top:2px;left:calc(50% + 6px);margin:0}
 .tabbar button > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .tabbar.many > div{gap:2px}
 .tabbar.many button{font-size:.68rem;padding-inline:2px}
@@ -335,7 +347,8 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
 .ev{display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
 .ev i{width:8px;height:8px;border-radius:50%;display:block}
 .ev > div{min-width:0;display:flex;flex-direction:column;overflow-wrap:anywhere}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.two input{min-width:0}
 .tl{list-style:none;margin:0;padding:0 0 0 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
 .tl-i{display:grid;grid-template-columns:30px 1fr;gap:8px;position:relative}
 .tl-i::before{content:"";position:absolute;left:-21px;top:7px;width:9px;height:9px;border-radius:50%;background:var(--bg);border:1px solid var(--muted)}
@@ -386,6 +399,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
    Édition "mobile" conservée pour une éventuelle vitrine sobre dans les stores, plus tard.
    Phases : 1 cœur couple · 2 fil privé entre couples invités (cercle) · 3 fil public · 4 rencontres entre couples (puis webcams). */
 const EDITION = "web";
+const APP_VERSION = "15 · 18 oct. 2026";
 const PHASE_DEFAULT = 1;
 let PHASE = PHASE_DEFAULT; // remplacé par le mode test des Réglages (S.testPhase)
 const MOBILE = EDITION === "mobile";
@@ -1158,8 +1172,22 @@ const MDB = {
 };
 let MEDIA = [];
 const URLS = {};
-const urlOf = m => URLS[m.id] || (URLS[m.id] = URL.createObjectURL(m.blob));
-async function loadMedia(){ MEDIA = (await MDB.all()).sort((a,b) => b.date - a.date); }
+/* Album d'exemple : illustrations douces (vectorielles) pour le couple fictif */
+const SVGW = b => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500">${b}</svg>`);
+const DEMO_MEDIA = [
+ {id:"dm1", author:1, days:2, caption:"Notre dîner aux chandelles, téléphone dans l'autre pièce.", art:`<defs><radialGradient id="g" cx="50%" cy="35%" r="70%"><stop offset="0" stop-color="#5a2b2f"/><stop offset="1" stop-color="#140c10"/></radialGradient></defs><rect width="400" height="500" fill="url(#g)"/><rect y="360" width="400" height="140" fill="#2a1416"/><g fill="#f7e7c6"><rect x="150" y="230" width="22" height="130" rx="4"/><rect x="228" y="250" width="22" height="110" rx="4"/></g><g fill="#ffcf6b"><ellipse cx="161" cy="214" rx="9" ry="18"/><ellipse cx="239" cy="234" rx="9" ry="18"/></g><circle cx="161" cy="210" r="60" fill="#ffcf6b" opacity=".12"/><circle cx="239" cy="230" r="60" fill="#ffcf6b" opacity=".12"/><g fill="none" stroke="#e9d9d0" stroke-width="4" opacity=".8"><path d="M80 300 q20 40 40 0 v-30 h-40z"/><path d="M290 300 q20 40 40 0 v-30 h-40z"/><path d="M100 320 v40 M310 320 v40 M85 362 h30 M295 362 h30"/></g><path d="M86 290 h28 l-2 14 q-12 16 -24 0z M296 290 h28 l-2 14 q-12 16 -24 0z" fill="#9c2f45"/>`},
+ {id:"dm2", author:0, days:5, caption:"Café au lit, dimanche sans réveil.", art:`<rect width="400" height="500" fill="#efe3d6"/><path d="M0 330 Q100 300 200 335 T400 325 V500 H0z" fill="#e2d2c2"/><path d="M0 380 Q120 350 220 390 T400 380" stroke="#d3bfac" stroke-width="3" fill="none"/><g><ellipse cx="140" cy="300" rx="52" ry="14" fill="#cdb8a3"/><path d="M95 230 h90 l-8 60 q-37 18 -74 0z" fill="#fff"/><path d="M185 245 q28 4 18 30 q-8 14 -24 8" stroke="#fff" stroke-width="9" fill="none"/><ellipse cx="140" cy="232" rx="45" ry="9" fill="#6b4630"/></g><g><ellipse cx="270" cy="318" rx="52" ry="14" fill="#cdb8a3"/><path d="M225 248 h90 l-8 60 q-37 18 -74 0z" fill="#e8698a"/><path d="M315 263 q28 4 18 30 q-8 14 -24 8" stroke="#e8698a" stroke-width="9" fill="none"/><ellipse cx="270" cy="250" rx="45" ry="9" fill="#6b4630"/></g><g stroke="#bfa58f" stroke-width="3" fill="none" opacity=".7"><path d="M130 205 q-8 -18 4 -30 q10 -12 0 -26"/><path d="M262 222 q-8 -18 4 -30 q10 -12 0 -26"/></g>`},
+ {id:"dm3", author:1, days:9, caption:"Coucher de soleil à deux, sans le prendre en photo… sauf celle-là.", art:`<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b1e4a"/><stop offset=".5" stop-color="#e8698a"/><stop offset="1" stop-color="#ffb36b"/></linearGradient></defs><rect width="400" height="500" fill="url(#s)"/><circle cx="200" cy="300" r="70" fill="#ffd9a0" opacity=".9"/><rect y="320" width="400" height="180" fill="#3a2441"/><g fill="#ffd9a0" opacity=".35"><rect x="120" y="335" width="160" height="4" rx="2"/><rect x="150" y="350" width="100" height="3" rx="2"/><rect x="170" y="364" width="60" height="3" rx="2"/></g><g fill="#140c18"><circle cx="178" cy="380" r="13"/><path d="M164 395 h28 l6 70 h-40z"/><circle cx="222" cy="384" r="12"/><path d="M209 398 h26 l4 67 h-34z"/><path d="M190 420 q10 8 22 0" stroke="#140c18" stroke-width="7" fill="none"/></g>`},
+ {id:"dm4", author:0, days:14, caption:"Défi photo : un détail de peau que j'aime chez toi.", art:`<rect width="400" height="500" fill="#d9a48c"/><path d="M-20 260 Q120 200 220 250 T420 230 V520 H-20z" fill="#c98f76"/><path d="M-20 330 Q140 280 240 330 T420 320" stroke="#b97d65" stroke-width="2" fill="none" opacity=".6"/><g fill="#8a5a48" opacity=".55"><circle cx="150" cy="300" r="3"/><circle cx="172" cy="292" r="2.2"/><circle cx="160" cy="318" r="2.6"/><circle cx="260" cy="280" r="2"/></g><path d="M0 0 H400 V140 Q250 180 0 120z" fill="#2a1d26" opacity=".85"/><text x="200" y="80" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="26" fill="#f3eaef">tes grains de beauté</text>`},
+ {id:"dm5", author:1, days:21, caption:"Week-end surprise : la chambre avec vue.", art:`<rect width="400" height="500" fill="#151a2e"/><rect x="40" y="50" width="320" height="250" rx="6" fill="#1f2a4a" stroke="#c9b28a" stroke-width="6"/><line x1="200" y1="50" x2="200" y2="300" stroke="#c9b28a" stroke-width="5"/><g fill="#ffd27a"><rect x="70" y="200" width="16" height="90"/><rect x="95" y="170" width="22" height="120"/><rect x="130" y="215" width="18" height="75"/><rect x="230" y="180" width="20" height="110"/><rect x="262" y="205" width="16" height="85"/><rect x="290" y="160" width="26" height="130"/></g><circle cx="300" cy="100" r="20" fill="#f3eaef"/><rect y="330" width="400" height="170" fill="#e9dfd3"/><path d="M0 370 Q200 340 400 370 V500 H0z" fill="#d9cbbb"/><rect x="60" y="300" width="120" height="50" rx="20" fill="#fff"/><rect x="220" y="300" width="120" height="50" rx="20" fill="#fff"/>`},
+ {id:"dm6", author:0, days:30, caption:"Nos mains, le soir de nos 3 ans.", art:`<rect width="400" height="500" fill="#2a1d26"/><circle cx="200" cy="250" r="160" fill="#e8698a" opacity=".12"/><path d="M70 330 C120 250 170 240 205 262 L260 230 C285 216 300 240 280 256 L236 290 C250 300 248 320 232 326 C240 340 228 358 212 356 C206 372 186 376 176 362 C150 380 110 370 70 330z" fill="#e7b9a2"/><path d="M330 170 C290 230 240 250 205 236 L160 262 C140 274 128 252 145 240 L182 214 C170 204 174 186 190 182 C186 168 200 156 214 160 C222 146 240 146 248 160 C270 146 305 150 330 170z" fill="#c98f76"/><circle cx="214" cy="268" r="6" fill="none" stroke="#d8b26a" stroke-width="3"/>`},
+];
+const demoMedia = () => DEMO_MEDIA.filter(m => !(S.demoHidden || []).includes(m.id)).map(m => ({id:m.id, demo:true, type:"image/svg+xml", src:SVGW(m.art), caption:m.caption, author:m.author, date:Date.now() - m.days*864e5}));
+const realCount = () => MEDIA.filter(m => !m.demo).length;
+const mLikes = id => (S.mlikes[id] = S.mlikes[id] || [false,false]);
+const mComs = id => (S.mcom[id] = S.mcom[id] || []);
+const urlOf = m => m.demo ? m.src : URLS[m.id] || (URLS[m.id] = URL.createObjectURL(m.blob));
+async function loadMedia(){ MEDIA = (await MDB.all()).concat(S.demo ? demoMedia() : []).sort((a,b) => b.date - a.date); }
 function revokeAll(){ Object.keys(URLS).forEach(k => { URL.revokeObjectURL(URLS[k]); delete URLS[k]; }); }
 async function openAlbum(extra){ await loadMedia(); go("album", extra); }
 function challenges(){
@@ -1180,7 +1208,7 @@ function fresh(){ return {couple:null, answers:[{},{}], bonus:[{},{}], revealed:
   plan:"free", ctx:[{},{}], ctxShare:[false,false], lived:[], prog:{}, daily:{}, lang:"fr", country:"FR",
   created:Date.now(), dates:[], keys:[], letters:[], revAt:{}, ansAt:[0,0], reviewAt:[0,0], reviewHide:0, nudge:false, distance:{on:false, until:null}, maps:{},
   testPhase:PHASE_DEFAULT, circle:[], meetWait:false, meetLikes:{}, installHide:0,
-  auth:{mode:"own", me:0, passkey:[null,null], lock:false}, planned:[]}; }
+  auth:{mode:"own", me:0, passkey:[null,null], lock:false}, planned:[], mlikes:{}, mcom:{}, demoHidden:[]}; }
 S = Object.assign(fresh(), S);
 if(MOBILE) S.aff = false;
 PHASE = S.testPhase || PHASE_DEFAULT;
@@ -1301,7 +1329,7 @@ function tabbar(active){
   tabs.push(["album","Album","albumPin",explicitOpen() ? pendingFor(0).length + pendingFor(1).length : 0]);
   if(meetOpen()) tabs.push(["meet","Couples","meet",0]);
   return `<nav class="tabbar ${tabs.length > 5 ? "many" : ""}" aria-label="Navigation"><div style="grid-template-columns:repeat(${tabs.length},1fr)">
-    ${tabs.map(([k,t,g,n]) => `<button class="${active===k?"on":""}" data-go="${g}"><i></i><span>${t}${n?`<span class="badge">${n}</span>`:""}</span></button>`).join("")}
+    ${tabs.map(([k,t,g,n]) => `<button class="${active===k?"on":""}" data-go="${g}"><i></i><span>${t}</span>${n?`<span class="badge">${n}</span>`:""}</button>`).join("")}
   </div></nav>`;
 }
 
@@ -2220,6 +2248,25 @@ const EN = {
 "Public": "Public",
 "Rencontres": "Meet couples",
 "Couples": "Couples",
+"Exemple": "Sample",
+"Soyez le premier à aimer": "Be the first to like it",
+"Commentaires": "Comments",
+"Ajouter un commentaire…": "Add a comment…",
+"Publier": "Post",
+"Notre dîner aux chandelles, téléphone dans l'autre pièce.": "Our candlelit dinner, phone in the other room.",
+"Café au lit, dimanche sans réveil.": "Coffee in bed, a Sunday with no alarm.",
+"Coucher de soleil à deux, sans le prendre en photo… sauf celle-là.": "Sunset for two, no photos… except this one.",
+"Défi photo : un détail de peau que j'aime chez toi.": "Photo challenge: a detail of your skin I love.",
+"Week-end surprise : la chambre avec vue.": "Surprise weekend: the room with a view.",
+"Nos mains, le soir de nos 3 ans.": "Our hands, on our third anniversary.",
+"Meilleure soirée du mois. On recommence quand tu veux.": "Best evening of the month. Let's do it again whenever you like.",
+"Je garde celle-là en fond d'écran.": "I'm keeping this one as my wallpaper.",
+"Ton tour la semaine prochaine.": "Your turn next week.",
+"Trois ans, et toujours la même envie de te tenir la main.": "Three years, and I still want to hold your hand.",
+"Lier à une carte": "Link to a card",
+"Aucune": "None",
+"Dans l'agenda, seul « Moment à deux » et l'intensité s'affichent : la carte reste discrète.": "In the calendar, only \"Moment for two\" and the intensity are shown: the card stays discreet.",
+"Voir le moment": "See the moment",
 "Double oui : vous en avez envie tous les deux": "Double yes: you both want this",
 "Composer un moment avec cette carte": "Plan a moment with this card",
 "On en parle ce soir": "Let's talk about it tonight",
@@ -2308,6 +2355,13 @@ const EN = {
 const EN_LC = {}; Object.entries(EN).forEach(([k,v]) => { EN_LC[k.toLowerCase()] = v.charAt(0).toLowerCase() + v.slice(1); });
 const EN_RX = [
  [/^(\d+) \/ (\d+) réponses$/, "$1 / $2 answers"],
+ [/^Aimé par (.+) et (.+)$/, "Liked by $1 and $2"],
+ [/^Aimé par (.+)$/, "Liked by $1"],
+ [/^Commentaires \((\d+)\)$/, "Comments ($1)"],
+ [/^Aucun commentaire\. Un mot doux pour (.+) \?$/, "No comments yet. A sweet word for $1?"],
+ [/^Ajouté par (.+) · (.+?)( · photo d'exemple)?$/, (m,a,d,x) => `Added by ${a} · ${d}` + (x ? " · sample photo" : "")],
+ [/^Prévu le (.+?)( · à en parler hors du lit, au calme| · détails dans le moment, rien n'est écrit ici)?$/, (m,d,x) => `Planned for ${d}` + (x ? (x.includes("parler") ? " · to discuss calmly, outside the bedroom" : " · details in the moment, nothing written here") : "")],
+ [/^Moment à deux · (.+)$/, (m,l) => `Moment for two · ${tr(l)}`],
  [/^Un moment (.+) choisi ensemble$/, (m,l) => `A ${tr(l)} moment chosen together`],
  [/^Un moment (.+)$/, (m,l) => tr(l) !== l ? `A ${tr(l)} moment` : m],
  [/^Choisi le (.+?)( · à en parler hors du lit, au calme| · détails dans le moment, rien n'est écrit ici)?$/, (m,d,x) => `Chosen on ${d}` + (x ? (x.includes("parler") ? " · to discuss calmly, outside the bedroom" : " · details in the moment, nothing written here") : "")],
@@ -2428,7 +2482,7 @@ const nextValentine = () => { const n = new Date(), y = n.getFullYear(); return 
 const monthOffset = iso => { const n = new Date(); return (+iso.slice(0,4) - n.getFullYear())*12 + (+iso.slice(5,7) - 1 - n.getMonth()); };
 function agendaEvents(from, to){
   const out = [], inR = d => d >= from && d <= to;
-  S.dates.forEach(d => { if(inR(d.date)) out.push({date:d.date, time:d.time, type:"rdv", title:d.title, id:d.id, by:d.by}); });
+  S.dates.forEach(d => { if(inR(d.date)) out.push({date:d.date, time:d.time, type:"rdv", title:d.title, id:d.id, by:d.by, pid:d.pid}); });
   S.notes.forEach(n => { if(n.due && !n.done && inR(n.due)) out.push({date:n.due, type:"note", title:n.text}); });
   S.letters.forEach(l => { if(!l.opened && inR(l.openAt)) out.push({date:l.openAt, type:"letter", title:`Une lettre pour ${S.couple.names[l.to]} à ouvrir`}); });
   const y0 = +from.slice(0,4), y1 = +to.slice(0,4);
@@ -2485,7 +2539,7 @@ function plannedCard(){
     <div class="list">${S.planned.slice().reverse().map(m => { const lv = LEVELS[(m.lv || 1) - 1]; return `<div class="mrow">
       <span class="t">${m.talk ? "Une envie à aborder ensemble" : `Un moment ${esc(lv ? lv.name : "")}`}</span>
       ${m.talk ? `<button class="link" data-donetalk="${m.pid}">C'est fait</button>` : `<button class="link" data-planned="${m.pid}">Ouvrir</button>`}
-      <span class="s">Choisi le ${dshort(isoDay(m.created))}${m.talk ? " · à en parler hors du lit, au calme" : " · détails dans le moment, rien n'est écrit ici"}</span></div>`; }).join("")}</div>
+      <span class="s">${m.date ? `Prévu le ${dlong(m.date)}` : `Choisi le ${dshort(isoDay(m.created))}`}${m.talk ? " · à en parler hors du lit, au calme" : " · détails dans le moment, rien n'est écrit ici"}</span></div>`; }).join("")}</div>
   </section>`;
 }
 function homeExtras(){
@@ -2513,7 +2567,19 @@ function homeExtras(){
   </section>`); }
   return out.join("");
 }
-const evRow = (e, showDate) => `<div class="ev ev-${e.type}"><i></i><div><b>${esc(e.title)}</b><span class="small muted">${showDate ? dlong(e.date) : ""}${e.time ? `${showDate ? " · " : ""}${esc(e.time)}` : ""}${e.type === "rdv" && e.by != null ? ` · proposé par ${nm(e.by)}` : ""}</span></div>${e.type === "rdv" ? `<button class="link" data-delrdv="${e.id}">Retirer</button>` : "<span></span>"}</div>`;
+/* Agenda : lier un rendez-vous à un moment choisi ou à une carte découverte (le titre affiché reste discret) */
+function linkSelect(sel){
+  const planned = S.planned.filter(m => !m.talk), cards = S.revealed.map(id => ITEMS[id]).filter(i => i && matchOf(i) && composable(i) && !planned.some(m => m.card === i.id));
+  if(!planned.length && !cards.length) return "";
+  const lvn = n => (LEVELS[(n || 1) - 1] || {}).name || "";
+  return `<label class="f">Lier à une carte
+    <select id="rdvLink"><option value="">Aucune</option>
+      ${planned.length ? `<optgroup label="Moments choisis ensemble">${planned.map(m => `<option value="p:${m.pid}" ${sel === "p:" + m.pid ? "selected" : ""}>${esc(m.card && ITEMS[m.card] ? ITEMS[m.card].label : m.title)} · ${esc(lvn(m.lv))}</option>`).join("")}</optgroup>` : ""}
+      ${cards.length ? `<optgroup label="Cartes découvertes">${cards.map(i => `<option value="c:${i.id}" ${sel === "c:" + i.id ? "selected" : ""}>${esc(i.label)} · ${esc(lvn(i.l))}</option>`).join("")}</optgroup>` : ""}
+    </select></label>
+    <p class="small muted">Dans l'agenda, seul « Moment à deux » et l'intensité s'affichent : la carte reste discrète.</p>`;
+}
+const evRow = (e, showDate) => `<div class="ev ev-${e.type}"><i></i><div><b>${esc(e.title)}</b><span class="small muted">${showDate ? dlong(e.date) : ""}${e.time ? `${showDate ? " · " : ""}${esc(e.time)}` : ""}${e.type === "rdv" && e.by != null ? ` · proposé par ${nm(e.by)}` : ""}</span></div>${e.type === "rdv" ? `<span class="row" style="gap:8px;justify-content:flex-end">${e.pid && S.planned.some(x => x.pid === e.pid) ? `<button class="link" data-planned="${e.pid}">Voir le moment</button>` : ""}<button class="link" data-delrdv="${e.id}">Retirer</button></span>` : "<span></span>"}</div>`;
 const tlHtml = (items, del) => `<ol class="tl">${items.map(e => `<li class="tl-i tl-${e.type}"><span class="tl-d">${+e.date.slice(8,10)}</span><div><b>${esc(e.title)}</b>${e.sub ? `<span class="small muted">${esc(e.sub)}</span>` : ""}${del && e.type === "key" && e.id ? `<button class="link" data-delkey="${e.id}" style="align-self:flex-start">Retirer</button>` : ""}</div></li>`).join("")}</ol>`;
 
 /* =========================================================
@@ -2938,7 +3004,7 @@ deck(){
   <div class="topbar"><button class="back" data-go="home">← Accueil</button><span class="small muted">${left} carte${left>1?"s":""} restante${left>1?"s":""}</span></div>
   ${card ? revealCard(card) + `<div class="stack">${composable(card.item) ? `<button class="btn primary block" data-act="composeCard">Composer un moment avec cette carte</button>`
       : CATS.find(c => c.id === card.item.cat).talk ? `<button class="btn primary block" data-act="talkCard">On en parle ce soir</button>` : ""}
-    <div class="row">${left?`<button class="btn gold" data-act="draw">Carte suivante</button>`:""}<button class="btn ghost" data-go="home">Plus tard</button></div></div>`
+    <div class="row center">${left?`<button class="btn gold" data-act="draw">Carte suivante</button>`:""}<button class="btn ghost" data-go="home">Plus tard</button></div></div>`
   : `<h2>À vous deux</h2><p class="muted">Installez-vous côte à côte. Chaque carte est une envie que vous avez cochée tous les deux.</p>
      <div class="deck"><div class="back-card"></div><div class="back-card"></div><div class="back-card" data-act="draw" role="button" tabindex="0" aria-label="Retourner une carte"><span>Toucher pour retourner</span></div></div>`}`; },
 
@@ -2980,7 +3046,8 @@ moment(){
         <div class="step"><div><h4>Après</h4><p>Restez peau contre peau quelques minutes, un verre d'eau, puis chacun dit une chose qu'il a aimée. Le lendemain, un mot doux par message.</p></div></div>
       </div>
       ${mo.pid ? `<p class="banner">Choisi ensemble le ${dshort(isoDay(mo.created || Date.now()))}. Ce moment vous attend sur l'accueil et apparaît dans votre frise.</p>` : ""}
-      <div class="row"><button class="btn gold" data-act="lived">Nous l'avons vécu</button>${mo.pid ? `<button class="btn" data-act="planMoment">Le prévoir dans l'agenda</button><button class="link" data-act="dropMoment">Retirer ce choix</button>` : ""}</div>
+      <div class="row center"><button class="btn gold" data-act="lived">Nous l'avons vécu</button>${mo.pid ? `<button class="btn" data-act="planMoment">Le prévoir dans l'agenda</button>` : ""}</div>
+      ${mo.pid ? `<button class="link" data-act="dropMoment" style="align-self:center">Retirer ce choix</button>` : ""}
       ${S.aff ? shopHtml([COFFRETS[Math.min(mo.lv,3)], ...mo.ids.flatMap(id => affFor(ITEMS[id]))]) : ""}
       ${S.aff ? `<div class="shop"><span class="eyebrow">Pour en faire une vraie sortie</span>${EXPERIENCES[mo.lv].map(e => `<div class="prod"><div><strong>${esc(e.p)}</strong><p class="small muted">${esc(e.w)}</p></div><span class="pill">Réservation à brancher</span></div>`).join("")}</div>` : ""}
     </section>` : ""}
@@ -3095,6 +3162,8 @@ album(){
   </section>` : S.revealed.length ? "" : `<p class="small muted">Retournez des cartes d'accord pour débloquer des défis photo.</p>`}
   ${MEDIA.length ? `<div class="grid ${blur?"blur":""}">${MEDIA.map(m => `<button class="thumb" data-media="${m.id}" aria-label="${esc(m.caption || "Média")}">
       ${m.type.startsWith("video") ? `<video src="${urlOf(m)}#t=0.1" muted playsinline preload="metadata"></video><span class="tag">Vidéo</span>` : `<img src="${urlOf(m)}" alt="">`}
+      ${(n => n.l || n.c ? `<span class="meta">${n.l ? `<span>♥ ${n.l}</span>` : ""}${n.c ? `<span>💬 ${n.c}</span>` : ""}</span>` : "")({l:mLikes(m.id).filter(Boolean).length, c:mComs(m.id).length})}
+      ${m.demo ? `<span class="tag" style="top:6px;bottom:auto">Exemple</span>` : ""}
     </button>`).join("")}</div>`
   : `<div class="card"><h3>Votre album est vide</h3><p class="muted small">Ajoutez une première photo, ou relevez un défi.</p></div>`}
   ${explicitOpen() && S.posts.some(x => x.status !== "withdrawn") ? `<section class="card"><span class="eyebrow">Nos publications</span>
@@ -3131,9 +3200,16 @@ media(){
   <div class="topbar"><button class="back" data-act="backAlbum">← Album</button></div>
   <div class="viewer">${m.type.startsWith("video") ? `<video src="${urlOf(m)}" controls playsinline></video>` : `<img src="${urlOf(m)}" alt="${esc(m.caption)}">`}</div>
   ${m.caption ? `<p>${esc(m.caption)}</p>` : ""}
-  <p class="small muted">Ajouté par ${esc(S.couple.names[m.author])} · ${new Date(m.date).toLocaleDateString(LOC(),{day:"numeric",month:"long",year:"numeric"})}</p>
+  ${(() => { const lk = mLikes(m.id), who = [0,1].filter(p => lk[p]), coms = mComs(m.id); return `
+  <div class="likebar"><button class="heart ${lk[V.p] ? "on" : ""}" data-mlike="${m.id}" aria-pressed="${!!lk[V.p]}" aria-label="J'aime">${lk[V.p] ? "♥" : "♡"}</button>
+    <span class="small">${who.length === 2 ? `Aimé par ${nm(0)} et ${nm(1)}` : who.length ? `Aimé par ${nm(who[0])}` : "Soyez le premier à aimer"}</span></div>
+  <p class="small muted">Ajouté par ${esc(S.couple.names[m.author])} · ${new Date(m.date).toLocaleDateString(LOC(),{day:"numeric",month:"long",year:"numeric"})}${m.demo ? " · photo d'exemple" : ""}</p>
+  <section class="card"><span class="eyebrow">Commentaires${coms.length ? ` (${coms.length})` : ""}</span>
+    ${coms.length ? coms.map((c,i) => `<div class="com"><p><b>${nm(c.by)}</b> ${esc(c.text)}</p><span class="small muted">${when(c.date)}${c.by === V.p ? ` · <button class="link" data-delcom="${i}" style="padding:0">Supprimer</button>` : ""}</span></div>`).join("") : `<p class="small muted">Aucun commentaire. Un mot doux pour ${nm(1-V.p)} ?</p>`}
+    <form id="comForm" class="compose" novalidate><textarea id="comText" rows="1" placeholder="Ajouter un commentaire…" aria-label="Commentaire" style="min-height:44px"></textarea><button class="btn primary" type="submit">Publier</button></form>
+  </section>`; })()}
   ${acc ? `<div class="row"><span class="pill s3">${esc(acc.label)}</span>${m.challenge ? `<span class="pill">Défi relevé</span>` : ""}</div>` : ""}
-  ${!explicitOpen() ? "" : (() => {
+  ${!explicitOpen() || m.demo ? "" : (() => {
     const active = S.posts.find(x => x.mediaId === m.id && ["pending","review","live"].includes(x.status));
     if(active) return `<p class="small"><span class="status ${active.status}">${STATUS[active.status]}</span></p>`;
     const ready = S.pub.pseudo && S.pub.idv[0] && S.pub.idv[1];
@@ -3370,6 +3446,7 @@ agenda(){
     <label class="f">Ce que vous prévoyez<input type="text" id="rdvT" maxlength="90" value="${esc(V.prefill || "")}" placeholder="Dîner à la maison, sans téléphone" autocomplete="off"></label>
     <button type="button" class="link" data-act="rdvIdea" style="align-self:flex-start">Une idée au hasard</button>
     <div class="two"><label class="f">Le<input type="date" id="rdvD" value="${esc(sel && sel >= t ? sel : "")}" min="${t}"></label><label class="f">À (facultatif)<input type="time" id="rdvH"></label></div>
+    ${linkSelect(V.link)}
     <label class="f">Proposé par<select id="rdvBy"><option value="0">${nm(0)}</option><option value="1">${nm(1)}</option></select></label>
     <p class="err" id="rdvErr" hidden></p>
     <button class="btn primary" type="submit">Ajouter à l'agenda</button>
@@ -3636,7 +3713,8 @@ settings(){ return `
     <h3>Remettre les cartes face cachée</h3>
     <p class="muted small">Garde vos réponses mais permet de redécouvrir vos accords.</p>
     <button class="btn" data-act="unreveal">Remélanger</button>
-  </div>`; },
+  </div>
+  <p class="small muted" style="text-align:center">Prototype · version ${APP_VERSION}</p>`; },
 };
 
 function revealCard(m){
@@ -3805,7 +3883,7 @@ function bind(){
   if(upl) upl.onchange = () => {
     const files = [...upl.files].filter(f => /^(image|video)\//.test(f.type));
     if(!files.length) return;
-    if(!PLUS() && MEDIA.length + files.length > FREE_MEDIA){ revokeAll(); go("plus"); return; }
+    if(!PLUS() && realCount() + files.length > FREE_MEDIA){ revokeAll(); go("plus"); return; }
     files.forEach(f => f._url = URL.createObjectURL(f));
     albumGo("compose",{files, challenge:V.challenge});
   };
@@ -3898,6 +3976,12 @@ function bindPhases(){
   if(am) am.onchange = () => { S.auth.me = +am.value; S.auth.lock = S.auth.lock && hasKey(S.auth.me); SESSION.unlocked = false; save(); render(); };
   q("[data-addkey]").forEach(b => b.onclick = async () => { const p = +b.dataset.addkey, k = await registerPasskey(p); if(k){ S.auth.passkey[p] = k; if(isMe(p)) SESSION.unlocked = true; save(); } render(); });
   q("[data-unkey]").forEach(b => b.onclick = () => { const p = +b.dataset.unkey; S.auth.passkey[p] = null; if(isMe(p)){ S.auth.lock = false; SESSION.unlocked = false; } save(); render(); });
+  q("[data-mlike]").forEach(b => b.onclick = () => { const lk = mLikes(b.dataset.mlike); lk[V.p] = !lk[V.p]; save(); albumGo("media", {id:V.id}); });
+  q("[data-delcom]").forEach(b => b.onclick = () => { const l = mComs(V.id), i = +b.dataset.delcom; if(l[i] && l[i].by === V.p){ l.splice(i,1); save(); albumGo("media", {id:V.id}); } });
+  const cmf = document.getElementById("comForm");
+  if(cmf){ const t = document.getElementById("comText");
+    cmf.onsubmit = e => { e.preventDefault(); const v = t.value.trim(); if(!v) return; mComs(V.id).push({by:V.p, text:v.slice(0,500), date:Date.now()}); save(); albumGo("media", {id:V.id}); };
+    t.onkeydown = e => { if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); cmf.requestSubmit(); } }; }
   q("[data-planned]").forEach(b => b.onclick = () => { const mo = S.planned.find(x => x.pid === b.dataset.planned); if(mo) go("moment", {lv:mo.lv, mo}); });
   q("[data-donetalk]").forEach(b => b.onclick = () => { const m = S.planned.find(x => x.pid === b.dataset.donetalk);
     if(m){ S.keys.push({id:"k" + Date.now().toString(36), title:"Une conversation importante à deux", date:todayIso(), yearly:false}); S.planned = S.planned.filter(x => x !== m); save(); render(); } });
@@ -3931,10 +4015,17 @@ function bindTogether(){
   if(md) md.onchange = () => { S.distance.until = md.value || null; save(); render(); };
   const rf = document.getElementById("rdvForm");
   if(rf) rf.onsubmit = e => { e.preventDefault();
-    const t = document.getElementById("rdvT").value.trim(), d = document.getElementById("rdvD").value, err = document.getElementById("rdvErr");
-    const msg = !t ? "Indiquez ce que vous prévoyez." : !d ? "Choisissez une date." : d < todayIso() ? "Choisissez une date à venir." : "";
+    const link = document.getElementById("rdvLink")?.value || "";
+    let t = document.getElementById("rdvT").value.trim(); const d = document.getElementById("rdvD").value, err = document.getElementById("rdvErr");
+    const msg = !t && !link ? "Indiquez ce que vous prévoyez." : !d ? "Choisissez une date." : d < todayIso() ? "Choisissez une date à venir." : "";
     if(msg){ err.textContent = msg; err.hidden = false; return; }
-    S.dates.push({id:"r" + Date.now().toString(36), title:t, date:d, time:document.getElementById("rdvH").value || "", by:+document.getElementById("rdvBy").value});
+    let pid = null;
+    if(link.startsWith("c:")){ const it = ITEMS[link.slice(2)];
+      if(it && composable(it)){ const mo = compose(it.l, it.id); mo.pid = "c" + Date.now().toString(36); mo.created = Date.now(); mo.card = it.id; S.planned.push(mo); pid = mo.pid; } }
+    else if(link.startsWith("p:")) pid = link.slice(2);
+    const pm = pid && S.planned.find(x => x.pid === pid);
+    if(pm){ const lvn = (LEVELS[(pm.lv || 1) - 1] || {}).name || ""; if(!t || t === "Moment à deux · " + lvn || ITEMS[pm.card] && t.includes(ITEMS[pm.card].label)) t = "Moment à deux · " + lvn; pm.date = d; }
+    S.dates.push({id:"r" + Date.now().toString(36), title:t, date:d, time:document.getElementById("rdvH").value || "", by:+document.getElementById("rdvBy").value, pid});
     save(); go("agenda", {mo:monthOffset(d), day:d}); };
   const kf = document.getElementById("keyForm");
   if(kf) kf.onsubmit = e => { e.preventDefault();
@@ -3960,9 +4051,9 @@ const ACT = {
   albumSettings(){ albumGo("albumSettings"); },
   askDel(){ albumGo("media",{id:V.id, confirm:true}); },
   cancelDel(){ albumGo("media",{id:V.id}); },
-  async delMedia(){ S.posts.forEach(x => { if(x.mediaId === V.id) x.status = "withdrawn"; }); save(); await MDB.del(V.id); if(URLS[V.id]){ URL.revokeObjectURL(URLS[V.id]); delete URLS[V.id]; } await loadMedia(); albumGo("album"); },
+  async delMedia(){ if(V.id.startsWith("dm")){ S.demoHidden.push(V.id); save(); await loadMedia(); return albumGo("album"); } S.posts.forEach(x => { if(x.mediaId === V.id) x.status = "withdrawn"; }); save(); await MDB.del(V.id); if(URLS[V.id]){ URL.revokeObjectURL(URLS[V.id]); delete URLS[V.id]; } await loadMedia(); albumGo("album"); },
   askWipe(){ albumGo("albumSettings",{confirm:true}); },
-  async wipeAlbum(){ S.posts.forEach(x => x.status = "withdrawn"); save(); await MDB.clear(); revokeAll(); MEDIA = []; albumGo("album"); },
+  async wipeAlbum(){ S.posts.forEach(x => x.status = "withdrawn"); S.demoHidden = DEMO_MEDIA.map(m => m.id); save(); await MDB.clear(); revokeAll(); MEDIA = []; albumGo("album"); },
   toggleAff(){ S.aff = !S.aff; save(); render(); },
   togglePause(){ S.pause = !S.pause; save(); render(); },
   modeInvite(){ msgGo({mode:"invite"}); },
@@ -3974,7 +4065,7 @@ const ACT = {
     S.planned.push(mo); save(); go("moment", {lv:it.l, mo}); },
   talkCard(){ const it = ITEMS[V.card]; if(!it) return;
     S.planned.push({pid:"t" + Date.now().toString(36), talk:true, card:it.id, lv:it.l, created:Date.now(), title:it.label}); save(); go("home"); },
-  planMoment(){ const lv = LEVELS[(V.mo.lv || 1) - 1]; go("agenda", {prefill:`Moment à deux · ${lv ? lv.name : ""}`}); },
+  planMoment(){ const lv = LEVELS[(V.mo.lv || 1) - 1]; go("agenda", {prefill:`Moment à deux · ${lv ? lv.name : ""}`, link:"p:" + V.mo.pid}); },
   dropMoment(){ S.planned = S.planned.filter(x => x.pid !== V.mo.pid); save(); go("home"); },
   activatePlan(){ S.plan = V.sel || "year"; save(); go("plus"); },
   cancelPlan(){ S.plan = "free"; save(); go("plus"); },
@@ -4088,6 +4179,13 @@ function demoState(){
                g:[{0:2,1:1,2:3,3:0,4:1,5:1,6:0,7:0,8:0,9:3,10:2,11:0},{0:2,1:3,2:0,3:1,4:0,5:0,6:3,7:2,8:1,9:2,10:1,11:1}],
                at:[now - 6*24*h, now - 5*24*h]},
     valeurs:{a:[{0:1,1:0,2:0,3:0,4:2,5:2,6:0,7:0,8:0,9:1,10:3,11:1},{}], g:[{0:0,1:1,2:3,3:1,4:1,5:0,6:1,7:0,8:3,9:2,10:2,11:2},{}], at:[now - 2*24*h, 0]},
+  };
+  s.mlikes = {dm1:[true,true], dm2:[false,true], dm3:[true,true], dm4:[false,true], dm6:[true,false]};
+  s.mcom = {
+    dm1:[{by:0, text:"Meilleure soirée du mois. On recommence quand tu veux.", date:now - 47*h}, {by:1, text:"Vendredi ? Je m'occupe des bougies 🕯️", date:now - 46*h}],
+    dm3:[{by:0, text:"Je garde celle-là en fond d'écran.", date:now - 8*24*h}],
+    dm4:[{by:1, text:"Défi relevé haut la main 😏", date:now - 13*24*h}, {by:0, text:"Ton tour la semaine prochaine.", date:now - 13*24*h + 3*h}],
+    dm6:[{by:1, text:"Trois ans, et toujours la même envie de te tenir la main.", date:now - 29*24*h}],
   };
   s.daily = Object.fromEntries([1,2,4,7,11,15].map(n => [new Date(now - n*24*h).toISOString().slice(0,10), true]));
   return s;
