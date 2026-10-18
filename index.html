@@ -399,7 +399,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
    Édition "mobile" conservée pour une éventuelle vitrine sobre dans les stores, plus tard.
    Phases : 1 cœur couple · 2 fil privé entre couples invités (cercle) · 3 fil public · 4 rencontres entre couples (puis webcams). */
 const EDITION = "web";
-const APP_VERSION = "18 · 18 oct. 2026";
+const APP_VERSION = "19 · 18 oct. 2026";
 const PHASE_DEFAULT = 1;
 let PHASE = PHASE_DEFAULT; // remplacé par le mode test des Réglages (S.testPhase)
 const MOBILE = EDITION === "mobile";
@@ -2250,6 +2250,9 @@ const EN = {
 "Public": "Public",
 "Rencontres": "Meet couples",
 "Couples": "Couples",
+"Autre scénario": "Another scenario",
+"Ton choix actuel": "Your current choice",
+"Aucune intensité sélectionnée pour l'instant.": "No intensity selected yet.",
 "Qui ouvre ?": "Who's opening?",
 "L'album est commun : choisissez au nom de qui vous l'ouvrez.": "The album is shared: choose who is opening it.",
 "Les messages s'écrivent au nom de la personne choisie.": "Messages are written in the chosen person's name.",
@@ -2401,6 +2404,11 @@ const EN_RX = [
  [/^Votre intensité commune : (.+)\.$/, (m,l) => `Your shared intensity: ${tr(l)}.`],
  [/^Avec la carte (.+)\.$/, "With the card $1."],
  [/^(.+) ne verra pas ta réponse\. Vous découvrirez seulement l'intensité qui vous convient à tous les deux\.$/, "$1 won't see your answer. You'll only discover the intensity that suits you both."],
+ [/^Aperçu · (.+)$/, (m,l) => `Preview · ${tr(l)}`],
+ [/^Je choisis (.+)$/, (m,l) => `I choose ${tr(l)}`],
+ [/^Cette carte commence en (.+)$/, (m,l) => `This card starts at ${tr(l)}`],
+ [/^Touche une intensité pour voir le scénario\. (.+) ne verra pas ta réponse : vous découvrirez seulement l'intensité qui vous convient à tous les deux\.$/, "Tap an intensity to see the scenario. $1 won't see your answer: you'll only discover the intensity that suits you both."],
+ [/^Si (.+) choisit plus doux, c'est son intensité qui sera retenue, sans que tu saches laquelle était la sienne\.$/, "If $1 picks something gentler, theirs will be kept, without you knowing which one was theirs."],
  [/^Votre carte · (.+)$/, (m,c) => `Your card · ${tr(c)}`],
  [/^Empreinte de (.+)$/, "$1's fingerprint"],
  [/^Enregistrer l'empreinte de (.+)$/, "Register $1's fingerprint"],
@@ -2569,6 +2577,23 @@ function distanceCard(){
     <div class="row"><button class="btn" data-go="distance">Rituels à distance</button>${days !== null && days < 0 ? `<button class="btn ghost" data-act="toggleDistance">Quitter le mode à distance</button>` : ""}</div>
   </section>`;
 }
+function cardRecap(it){ const m = matchOf(it); return `<section class="reveal" style="animation:none;padding:16px 18px;gap:8px">
+    <div class="spread"><span class="eyebrow">Votre carte · ${esc(catName(it.cat))}</span>${m ? `<span class="pill s${m.score}">${scoreLabel(m.score)}</span>` : ""}</div>
+    <div class="label" style="font-size:1.5rem">${esc(it.label)}</div>
+    ${m ? whoHtml(m) : ""}
+    <span class="dbl"><i aria-hidden="true"></i>Double oui</span>
+  </section>`; }
+function ctxLines(){
+  const f = k => [0,1].filter(p => S.ctxShare[p]).flatMap(p => CTX.filter(c => S.ctx[p][c.id] === k).slice(0,2).map(c => `${c.label.toLowerCase()} (${nm(p)})`));
+  return {helps:f("on"), avoid:f("off")};
+}
+function stepsHtml(mo){ const {helps, avoid} = ctxLines(); return `<div class="steps">
+    <div class="step"><div><h4>Se mettre d'accord</h4><p>Deux minutes face à face : « ce soir j'ai envie de… », « ce soir je ne veux pas… ». Rappelez votre signal vert, orange, rouge.</p></div></div>
+    <div class="step"><div><h4>Ambiance</h4><p>${esc(mo.amb)}</p>${helps.length ? `<p class="small muted">Ce qui aide : ${esc(helps.join(", "))}.</p>` : ""}${avoid.length ? `<p class="small muted">À écarter ce soir : ${esc(avoid.join(", "))}.</p>` : ""}</div></div>
+    <div class="step"><div><h4>Ouverture</h4><p>${mo.open}</p></div></div>
+    <div class="step"><div><h4>Le cœur du moment</h4><p>${mo.core}</p></div></div>
+    <div class="step"><div><h4>Après</h4><p>Restez peau contre peau quelques minutes, un verre d'eau, puis chacun dit une chose qu'il a aimée. Le lendemain, un mot doux par message.</p></div></div>
+  </div>`; }
 function plannedCard(){
   if(!S.planned.length) return "";
   return `<section class="card" style="border-color:var(--rose)">
@@ -2936,15 +2961,25 @@ pin(){ return `
 
 /* ---------- Choix privé de l'intensité ---------- */
 lvPick(){ const p = V.p, v = S.lvVote || {}, it = v.key && v.key !== "free" ? ITEMS[v.key] : null, minL = it ? it.l : 1, cur = (v.v || [])[p];
+  const prev = V.prev, pmo = V.pmo;
   return `
   <div class="topbar"><button class="back" data-act="lvBack">← Annuler</button><span class="small muted">Espace de ${nm(p)}</span></div>
   <span class="eyebrow">En privé</span>
   <h2>Jusqu'où as-tu envie d'aller ce soir ?</h2>
-  ${it ? `<p class="muted">Avec la carte <strong>${esc(it.label)}</strong>.</p>` : ""}
-  <p class="muted small">${nm(1-p)} ne verra pas ta réponse. Vous découvrirez seulement l'intensité qui vous convient à tous les deux.</p>
-  <div class="levels">${LEVELS.filter(L => L.n >= minL).map(L => openLv(L.n)
-    ? `<button class="level ${cur===L.n?"on":""}" data-vote="${L.n}"><b>${L.name}</b><span class="small muted">${L.d}</span>${lvlDots(L.n)}</button>`
+  ${it ? cardRecap(it) : ""}
+  <p class="muted small">Touche une intensité pour voir le scénario. ${nm(1-p)} ne verra pas ta réponse : vous découvrirez seulement l'intensité qui vous convient à tous les deux.</p>
+  <div class="levels">${LEVELS.map(L => L.n < minL
+    ? `<button class="level" disabled><b>${L.name}</b><span class="small muted">Cette carte commence en ${LEVELS[minL-1].name}</span>${lvlDots(L.n)}</button>`
+    : openLv(L.n)
+    ? `<button class="level ${prev===L.n || (!prev && cur===L.n)?"on":""}" data-prev="${L.n}"><b>${L.name}</b><span class="small muted">${L.d}</span>${lvlDots(L.n)}${cur===L.n ? `<span class="small" style="color:var(--gold)">Ton choix actuel</span>` : ""}</button>`
     : `<button class="level" data-go="plus"><b>${L.name}</b><span class="small muted">${L.d}</span><span><span class="lockpill">Bothnod+</span></span></button>`).join("")}</div>
+  ${pmo ? `<section class="card">
+      <span class="eyebrow">Aperçu · ${LEVELS[pmo.lv-1].name}</span>
+      <h3>${esc(pmo.title)}</h3>
+      ${stepsHtml(pmo)}
+      <div class="row center"><button class="btn primary" data-vote="${pmo.lv}">Je choisis ${LEVELS[pmo.lv-1].name}</button><button class="btn ghost" data-prev="${pmo.lv}">Autre scénario</button></div>
+      <p class="small muted" style="text-align:center">Si ${nm(1-p)} choisit plus doux, c'est son intensité qui sera retenue, sans que tu saches laquelle était la sienne.</p>
+    </section>` : `<p class="small muted" style="text-align:center">Aucune intensité sélectionnée pour l'instant.</p>`}
   <button class="btn ghost block" data-vote="0">Pas ce soir</button>`; },
 
 /* ---------- Verrouillage à l'ouverture ---------- */
@@ -3114,7 +3149,7 @@ moment(){
       <div class="chips">${ALTS.map(a => `<span class="chip">${esc(a)}</span>`).join("")}</div>
       <div class="row center"><button class="btn gold" data-act="voteReset">Recommencer le choix</button><button class="btn ghost" data-go="home">Revenir à l'accueil</button></div>
     </section>`;
-  if(agreed && !V.mo){ V.lv = agreed; V.mo = compose(agreed, cardIt ? cardIt.id : null); }
+  if(agreed && !V.mo){ V.lv = agreed; const seen = (vote.mo || []).find(m => m && m.lv === agreed); V.mo = seen ? {...seen} : compose(agreed, cardIt ? cardIt.id : null); }
   const avail = n => agreed ? n >= minL && n <= agreed : cardIt ? n >= cardIt.l : pool.some(m => m.item.l <= n);
   const lv = V.lv || (cardIt ? cardIt.l : [2,1].find(avail) || [1,2,3,4].find(avail));
   const helps = [0,1].filter(p => S.ctxShare[p]).flatMap(p => CTX.filter(c => S.ctx[p][c.id] === "on").slice(0,2).map(c => `${c.label.toLowerCase()} (${nm(p)})`));
@@ -4073,7 +4108,10 @@ function bindPhases(){
   q("[data-addkey]").forEach(b => b.onclick = async () => { const p = +b.dataset.addkey, k = await registerPasskey(p); if(k){ S.auth.passkey[p] = k; if(isMe(p)) SESSION.unlocked = true; save(); } render(); });
   q("[data-unkey]").forEach(b => b.onclick = () => { const p = +b.dataset.unkey; S.auth.passkey[p] = null; if(isMe(p)){ S.auth.lock = false; SESSION.unlocked = false; } save(); render(); });
   q("[data-openas]").forEach(b => b.onclick = () => { const p = +b.dataset.openas; b.dataset.next === "album" ? openAlbum({p}) : openMessages(p); });
-  q("[data-vote]").forEach(b => b.onclick = () => { if(!S.lvVote) return; S.lvVote.v[V.p] = +b.dataset.vote; save();
+  q("[data-prev]").forEach(b => b.onclick = () => { const n = +b.dataset.prev, k = S.lvVote && S.lvVote.key;
+    go("lvPick", {p:V.p, prev:n, pmo:compose(n, k && k !== "free" ? k : null)}); });
+  q("[data-vote]").forEach(b => b.onclick = () => { if(!S.lvVote) return; const n = +b.dataset.vote; S.lvVote.v[V.p] = n;
+    S.lvVote.mo = S.lvVote.mo || [null,null]; S.lvVote.mo[V.p] = V.pmo && V.pmo.lv === n ? V.pmo : null; save();
     const k = S.lvVote.key; go("moment", {card:k !== "free" ? k : null}); });
   q("[data-backcard]").forEach(b => b.onclick = () => go("deck", {card:b.dataset.backcard}));
   q("[data-mlike]").forEach(b => b.onclick = () => { const lk = mLikes(b.dataset.mlike); lk[V.p] = !lk[V.p]; save(); albumGo("media", {id:V.id}); });
