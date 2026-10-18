@@ -399,7 +399,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
    Édition "mobile" conservée pour une éventuelle vitrine sobre dans les stores, plus tard.
    Phases : 1 cœur couple · 2 fil privé entre couples invités (cercle) · 3 fil public · 4 rencontres entre couples (puis webcams). */
 const EDITION = "web";
-const APP_VERSION = "17 · 18 oct. 2026";
+const APP_VERSION = "18 · 18 oct. 2026";
 const PHASE_DEFAULT = 1;
 let PHASE = PHASE_DEFAULT; // remplacé par le mode test des Réglages (S.testPhase)
 const MOBILE = EDITION === "mobile";
@@ -1208,11 +1208,13 @@ function fresh(){ return {couple:null, answers:[{},{}], bonus:[{},{}], revealed:
   plan:"free", ctx:[{},{}], ctxShare:[false,false], lived:[], prog:{}, daily:{}, lang:"fr", country:"FR",
   created:Date.now(), dates:[], keys:[], letters:[], revAt:{}, ansAt:[0,0], reviewAt:[0,0], reviewHide:0, nudge:false, distance:{on:false, until:null}, maps:{},
   testPhase:PHASE_DEFAULT, circle:[], meetWait:false, meetLikes:{}, installHide:0,
-  auth:{mode:"own", me:0, passkey:[null,null], lock:false}, planned:[], mlikes:{}, mcom:{}, demoHidden:[], lvVote:null}; }
+  auth:{mode:"own", me:0, passkey:[null,null], lock:false}, planned:[], mlikes:{}, mcom:{}, demoHidden:[], lvVote:null, testOpen:true}; }
 S = Object.assign(fresh(), S);
 if(MOBILE) S.aff = false;
 PHASE = S.testPhase || PHASE_DEFAULT;
 S.auth = Object.assign({mode:"own", me:0, passkey:[null,null], lock:false}, S.auth);
+if(S.testOpen === undefined) S.testOpen = true;
+const OPEN = () => !!S.testOpen; // mode test : aucun code à saisir, l'empreinte reste disponible
 function load(){ try{ const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; }catch(e){ return null; } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2248,6 +2250,12 @@ const EN = {
 "Public": "Public",
 "Rencontres": "Meet couples",
 "Couples": "Couples",
+"Qui ouvre ?": "Who's opening?",
+"L'album est commun : choisissez au nom de qui vous l'ouvrez.": "The album is shared: choose who is opening it.",
+"Les messages s'écrivent au nom de la personne choisie.": "Messages are written in the chosen person's name.",
+"Mode test : accès sans code. Réactivez les codes dans les Réglages.": "Test mode: no code needed. Turn codes back on in Settings.",
+"Mode test : accès sans code": "Test mode: no code needed",
+"Aucun code à saisir pour tester. L'empreinte et le verrouillage à l'ouverture restent disponibles.": "No codes to type while testing. Fingerprint and lock-on-open stay available.",
 "Chacun choisit son intensité": "Each of you picks your intensity",
 "Jusqu'où avez-vous envie d'aller ce soir ?": "How far do you want to go tonight?",
 "Chacun répond en privé, avec son code ou son empreinte. Bothnod retient l'intensité la plus douce des deux : personne ne sait si l'autre voulait aller plus loin.": "Each of you answers privately, with your code or fingerprint. Bothnod keeps the gentler of the two: nobody knows if the other wanted to go further.",
@@ -2454,6 +2462,7 @@ const EN_RX = [
  [/^Répondez pour vous seul·e\. Une pratique que vous ne voulez plus disparaît de vos propositions, sans que (.+) le sache\.$/, "Answer for yourself only. A practice you no longer want disappears from your suggestions, without $1 knowing."],
  [/^Vos limites ne seront jamais proposées\. (.+) ne sait pas lesquelles vous avez cochées\.$/, "Your limits will never be suggested. $1 doesn't know which ones you ticked."],
  [/^Partagé avec (.+) dans vos moments\.$/, "Shared with $1 in your moments."],
+ [/^Données d'exemple : (.+) & (.+) sont un couple fictif\.$/, "Sample data: $1 & $2 are a fictional couple."],
  [/^Données d'exemple : (.+) & (.+) sont un couple fictif\. Codes : (.+) (\d+), (.+) (\d+)\.$/, "Sample data: $1 & $2 are a fictional couple. Codes: $3 $4, $5 $6."],
  [/^Quelques étapes par semaine : rituels, toucher sans objectif, conversations\. (\d+) moments? vécus? ce mois-ci\.$/, (m,n) => `A few steps a week: rituals, non-goal touch, conversations. ${n} moment${n>1?"s":""} this month.`],
  [/^Prévue en phase 2 \(actuelle : phase (\d)\)$/, "Planned for phase 2 (current: phase $1)"],
@@ -2615,7 +2624,7 @@ const tlHtml = (items, del) => `<ol class="tl">${items.map(e => `<li class="tl-i
    ========================================================= */
 const $app = document.getElementById("app");
 function go(view, extra={}){
-  if(view === "pin" && extra.next && sessionOpen(extra.p)) return go(extra.next, {p:extra.p});
+  if(view === "pin" && extra.next && (OPEN() || sessionOpen(extra.p))){ if(extra.next === "unlockHome") SESSION.unlocked = true; return go(extra.next === "unlockHome" ? "home" : extra.next, {p:extra.p}); }
   if((view === "albumPin" || view === "msgPin") && OWN() && SESSION.unlocked){ const p = S.auth.me; return view === "albumPin" ? openAlbum({p}) : openMessages(p); }
   V = {view, ...extra}; render(); window.scrollTo(0,0); }
 let OBS = null;
@@ -2623,7 +2632,7 @@ function render(){
   if(OBS){ OBS.disconnect(); OBS = null; }
   const f = VIEWS[V.view] || VIEWS.home;
   document.documentElement.lang = S.lang === "en" ? "en" : "fr";
-  $app.innerHTML = (S.demo && S.couple ? `<div class="banner">Données d'exemple : ${nm(0)} &amp; ${nm(1)} sont un couple fictif. Codes : ${nm(0)} 0000, ${nm(1)} 1111.</div>` : "") + f();
+  $app.innerHTML = (S.demo && S.couple ? `<div class="banner">Données d'exemple : ${nm(0)} &amp; ${nm(1)} sont un couple fictif.${OPEN() ? "" : ` Codes : ${nm(0)} 0000, ${nm(1)} 1111.`}</div>` : "") + f();
   if(S.lang === "en") translateDom($app);
   bind();
 }
@@ -2730,6 +2739,15 @@ async function bioCheck(p, label){
   return simBio(label || `Empreinte de ${S.couple.names[p]}`);
 }
 function bioBtn(p, next, extra=""){ return hasKey(p) && isMe(p) ? `<button type="button" class="btn gold block" data-bio-go="${p}" data-next="${next}" ${extra}>Déverrouiller avec l'empreinte</button>` : ""; }
+function openAs(title, next, note){ return `
+  <div class="topbar"><button class="back" data-go="home">← Retour</button></div>
+  <div class="pin">
+    <span class="eyebrow">${esc(title)}</span>
+    <h2>Qui ouvre ?</h2>
+    <p class="muted small">${esc(note)}</p>
+    ${[0,1].map(p => `<button class="btn ${p ? "" : "primary"} block" data-openas="${p}" data-next="${next}">${nm(p)}</button>`).join("")}
+    <p class="small muted">Mode test : accès sans code. Réactivez les codes dans les Réglages.</p>
+  </div>`; }
 function pinNote(p){
   if(!OWN()) return `<p class="small muted">Téléphone partagé : l'empreinte ne sait pas qui la pose, le code reste donc nécessaire pour chaque espace privé.</p>`;
   if(!isMe(p)) return `<p class="small muted">Ce téléphone est celui de ${nm(S.auth.me)}. Dans l'appli réelle, ${nm(p)} ouvre son espace sur son propre téléphone, avec son empreinte.</p>`;
@@ -2822,7 +2840,7 @@ setup(){ return `
     ${[0,1].map(p => `<div class="card">
       <span class="eyebrow">Partenaire ${p+1}</span>
       <label class="f">Prénom<input type="text" id="n${p}" maxlength="24" autocomplete="off" required></label>
-      <label class="f">Code secret (4 chiffres)<input type="password" id="p${p}" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" required></label>
+      ${OPEN() ? "" : `<label class="f">Code secret (4 chiffres)<input type="password" id="p${p}" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" required></label>`}
     </div>`).join("")}
     <label class="check"><input type="checkbox" id="adult"> Nous sommes deux adultes (18 ans et plus) et nous utilisons Bothnod d'un commun accord.</label>
     <label class="check"><input type="checkbox" id="alone"> Chacun répondra seul, sans regarder les réponses de l'autre.</label>
@@ -2937,7 +2955,7 @@ locked(){ const p = S.auth.me; return `
     <p class="muted">Appli verrouillée. Seul·e ${nm(p)} peut l'ouvrir sur ce téléphone.</p>
   </section>
   <button class="btn gold block" data-bio-go="${p}" data-next="home">Déverrouiller avec l'empreinte</button>
-  <button class="link" data-pin="${p}" data-next="unlockHome" style="align-self:center">Utiliser mon code</button>`; },
+  ${OPEN() ? "" : `<button class="link" data-pin="${p}" data-next="unlockHome" style="align-self:center">Utiliser mon code</button>`}`; },
 unlockHome(){ SESSION.unlocked = true; V = {view:"home"}; return VIEWS.home(); },
 
 /* ---------- Liste des catégories ---------- */
@@ -3202,7 +3220,7 @@ meetMine(){ const p = V.p; return `
   <button class="btn primary block" data-go="meet">J'ai terminé</button>`; },
 
 /* ---------- Album : ouverture par l'un des deux codes ---------- */
-albumPin(){ return `
+albumPin(){ if(OPEN()) return openAs("Notre album", "album", "L'album est commun : choisissez au nom de qui vous l'ouvrez."); return `
   <div class="topbar"><button class="back" data-go="home">← Retour</button></div>
   <form class="pin" id="albumPinForm" novalidate>
     <span class="eyebrow">Notre album</span>
@@ -3343,7 +3361,7 @@ sync(){ const p = V.p; return `
     ${V.msg ? `<div class="banner">${esc(V.msg)}</div>` : ""}`}`; },
 
 /* ---------- Messagerie : ouverture par l'un des deux codes ---------- */
-msgPin(){ return `
+msgPin(){ if(OPEN()) return openAs("Entre nous", "messages", "Les messages s'écrivent au nom de la personne choisie."); return `
   <div class="topbar"><button class="back" data-go="home">← Retour</button></div>
   <form class="pin" id="msgPinForm" novalidate>
     <span class="eyebrow">Entre nous</span>
@@ -3755,6 +3773,7 @@ settings(){ return `
   </div>
   <div class="card">
     <h3>Connexion et sécurité</h3>
+    <button class="toggle" role="switch" aria-checked="${OPEN()}" data-act="toggleOpen"><span><strong>Mode test : accès sans code</strong><br><span class="small muted">Aucun code à saisir pour tester. L'empreinte et le verrouillage à l'ouverture restent disponibles.</span></span><span class="sw"></span></button>
     <p class="muted small">Dans l'appli réelle, chacun a son compte sur son téléphone et l'ouvre avec son empreinte ou Face ID. La session reste ouverte : plus de code à taper.</p>
     <div class="opts">
       <button class="opt ${OWN()?"on":""}" data-authmode="own" aria-pressed="${OWN()}">Un téléphone chacun (recommandé)<br><span class="small muted" style="font-weight:400">Empreinte au lancement, session ouverte</span></button>
@@ -3904,12 +3923,12 @@ function bind(){
 
   const sf = document.getElementById("setupForm");
   if(sf) sf.onsubmit = e => { e.preventDefault();
-    const g = id => document.getElementById(id).value.trim(), err = document.getElementById("setupErr");
+    const g = id => { const el = document.getElementById(id); return el ? el.value.trim() : (id === "p0" ? "0000" : id === "p1" ? "1111" : ""); }, err = document.getElementById("setupErr");
     const msg = !g("n0") || !g("n1") ? "Indiquez vos deux prénoms."
       : !/^\d{4}$/.test(g("p0")) || !/^\d{4}$/.test(g("p1")) ? "Chaque code doit contenir exactement 4 chiffres."
       : !document.getElementById("adult").checked || !document.getElementById("alone").checked ? "Cochez les deux engagements pour continuer." : "";
     if(msg){ err.textContent = msg; err.hidden = false; return; }
-    S = fresh(); S.testPhase = PHASE; S.couple = {names:[g("n0"),g("n1")], pins:[g("p0"),g("p1")]}; save(); go("home");
+    const open = OPEN(); S = fresh(); S.testOpen = open; S.testPhase = PHASE; S.couple = {names:[g("n0"),g("n1")], pins:[g("p0"),g("p1")]}; save(); go("home");
   };
   const pf = document.getElementById("pinForm");
   if(pf){ const inp = document.getElementById("pinIn"); inp.focus();
@@ -4053,6 +4072,7 @@ function bindPhases(){
   if(am) am.onchange = () => { S.auth.me = +am.value; S.auth.lock = S.auth.lock && hasKey(S.auth.me); SESSION.unlocked = false; save(); render(); };
   q("[data-addkey]").forEach(b => b.onclick = async () => { const p = +b.dataset.addkey, k = await registerPasskey(p); if(k){ S.auth.passkey[p] = k; if(isMe(p)) SESSION.unlocked = true; save(); } render(); });
   q("[data-unkey]").forEach(b => b.onclick = () => { const p = +b.dataset.unkey; S.auth.passkey[p] = null; if(isMe(p)){ S.auth.lock = false; SESSION.unlocked = false; } save(); render(); });
+  q("[data-openas]").forEach(b => b.onclick = () => { const p = +b.dataset.openas; b.dataset.next === "album" ? openAlbum({p}) : openMessages(p); });
   q("[data-vote]").forEach(b => b.onclick = () => { if(!S.lvVote) return; S.lvVote.v[V.p] = +b.dataset.vote; save();
     const k = S.lvVote.key; go("moment", {card:k !== "free" ? k : null}); });
   q("[data-backcard]").forEach(b => b.onclick = () => go("deck", {card:b.dataset.backcard}));
@@ -4162,6 +4182,7 @@ const ACT = {
   ageOk(){ S.ageOk = true; SESSION.ageAt = Date.now(); save(); go("feed"); },
   async install(){ if(!DEFER) return; DEFER.prompt(); try{ await DEFER.userChoice; }catch(e){} DEFER = null; render(); },
   installLater(){ S.installHide = Date.now(); save(); render(); },
+  toggleOpen(){ S.testOpen = !S.testOpen; save(); render(); },
   toggleLock(){ if(!hasKey(S.auth.me)) return; S.auth.lock = !S.auth.lock; save(); render(); },
   forgetAge(){ S.ageOk = false; SESSION.ageAt = 0; save(); render(); },
   circleDemo(){ addCircleCouple(); save(); go("feed", {scope:"circle"}); },
@@ -4207,7 +4228,7 @@ const ACT = {
 /* Couple d'exemple : réponses tirées au hasard, plus prudentes quand l'intensité monte */
 function demoState(){
   const s = fresh(); s.demo = true;
-  s.testPhase = PHASE; s.circle = ["Lina & Sam","Duo Velours"];
+  s.testPhase = PHASE; s.testOpen = OPEN(); s.circle = ["Lina & Sam","Duo Velours"];
   s.couple = {names:["Léa","Hugo"], pins:["0000","1111"]};
   s.pub = {pseudo:"Léa & Hugo", idv:[true,true]};
   const now = Date.now(), h = 36e5;
