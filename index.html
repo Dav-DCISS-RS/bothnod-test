@@ -399,7 +399,7 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
    Édition "mobile" conservée pour une éventuelle vitrine sobre dans les stores, plus tard.
    Phases : 1 cœur couple · 2 fil privé entre couples invités (cercle) · 3 fil public · 4 rencontres entre couples (puis webcams). */
 const EDITION = "web";
-const APP_VERSION = "19 · 18 oct. 2026";
+const APP_VERSION = "20 · 18 oct. 2026";
 const PHASE_DEFAULT = 1;
 let PHASE = PHASE_DEFAULT; // remplacé par le mode test des Réglages (S.testPhase)
 const MOBILE = EDITION === "mobile";
@@ -2250,6 +2250,7 @@ const EN = {
 "Public": "Public",
 "Rencontres": "Meet couples",
 "Couples": "Couples",
+"Changer la date": "Change the date",
 "Autre scénario": "Another scenario",
 "Ton choix actuel": "Your current choice",
 "Aucune intensité sélectionnée pour l'instant.": "No intensity selected yet.",
@@ -3172,7 +3173,8 @@ moment(){
         <div class="step"><div><h4>Après</h4><p>Restez peau contre peau quelques minutes, un verre d'eau, puis chacun dit une chose qu'il a aimée. Le lendemain, un mot doux par message.</p></div></div>
       </div>
       ${mo.pid ? `<p class="banner">Choisi ensemble le ${dshort(isoDay(mo.created || Date.now()))}. Ce moment vous attend sur l'accueil et apparaît dans votre frise.</p>` : ""}
-      ${mo.pid ? `<div class="row center"><button class="btn gold" data-act="lived">Nous l'avons vécu</button><button class="btn" data-act="planMoment">Le prévoir dans l'agenda</button></div>
+      ${mo.pid ? `${(pm => pm && pm.date ? `<p class="small" style="text-align:center">Prévu le ${dlong(pm.date)}</p>` : "")(S.planned.find(x => x.pid === mo.pid))}
+      <div class="row center"><button class="btn gold" data-act="planMoment">${(S.planned.find(x => x.pid === mo.pid) || {}).date ? "Changer la date" : "Le prévoir dans l'agenda"}</button><button class="btn" data-act="lived">Nous l'avons vécu</button></div>
       <button class="link" data-act="dropMoment" style="align-self:center">Retirer ce choix</button>`
       : `<div class="row center"><button class="btn primary" data-act="chooseMoment">Choisir ce moment</button><button class="btn ghost" data-act="compose">Une autre proposition</button></div>
       <p class="small muted" style="text-align:center">En le choisissant, vous le retrouvez sur l'accueil, dans votre frise et dans l'agenda si vous le prévoyez.</p>`}
