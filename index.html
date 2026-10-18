@@ -343,6 +343,9 @@ input[type=date],input[type=time]{background:var(--bg);border:1px solid var(--li
 .tl-key::before{background:var(--gold);border-color:var(--gold)}
 .tl-letter::before,.tl-start::before{border-color:var(--gold)}
 .tl-rdv::before{border-color:var(--rose)}
+.tl-chosen::before{background:var(--rose);border-color:var(--rose);opacity:.55}
+.dbl{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;color:var(--gold)}
+.dbl i{width:16px;height:16px;border-radius:50%;background:var(--rose);display:inline-block;box-shadow:9px 0 0 0 color-mix(in srgb,var(--gold) 85%,transparent);margin-right:9px}
 .tl-d{font-family:var(--font-display);font-style:italic;font-size:1.25rem;color:var(--muted);line-height:1.15;font-variant-numeric:tabular-nums}
 .tl-i > div{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
 .tl-mh{font-style:italic;margin-bottom:12px}
@@ -1177,7 +1180,7 @@ function fresh(){ return {couple:null, answers:[{},{}], bonus:[{},{}], revealed:
   plan:"free", ctx:[{},{}], ctxShare:[false,false], lived:[], prog:{}, daily:{}, lang:"fr", country:"FR",
   created:Date.now(), dates:[], keys:[], letters:[], revAt:{}, ansAt:[0,0], reviewAt:[0,0], reviewHide:0, nudge:false, distance:{on:false, until:null}, maps:{},
   testPhase:PHASE_DEFAULT, circle:[], meetWait:false, meetLikes:{}, installHide:0,
-  auth:{mode:"own", me:0, passkey:[null,null], lock:false}}; }
+  auth:{mode:"own", me:0, passkey:[null,null], lock:false}, planned:[]}; }
 S = Object.assign(fresh(), S);
 if(MOBILE) S.aff = false;
 PHASE = S.testPhase || PHASE_DEFAULT;
@@ -2217,6 +2220,17 @@ const EN = {
 "Public": "Public",
 "Rencontres": "Meet couples",
 "Couples": "Couples",
+"Double oui : vous en avez envie tous les deux": "Double yes: you both want this",
+"Composer un moment avec cette carte": "Plan a moment with this card",
+"On en parle ce soir": "Let's talk about it tonight",
+"Le prévoir dans l'agenda": "Add it to the calendar",
+"Retirer ce choix": "Remove this choice",
+"Vos choix à deux": "Your choices together",
+"Une envie à aborder ensemble": "A desire to talk about together",
+"Ouvrir": "Open",
+"Une envie choisie pour en parler ensemble": "A desire chosen to talk about together",
+"En attente": "Pending",
+"Une conversation importante à deux": "An important conversation together",
 "Simulation : sur votre téléphone, c'est le capteur d'empreinte ou Face ID qui s'affiche ici.": "Simulation: on your phone, the fingerprint sensor or Face ID appears here.",
 "Poser le doigt (simulation)": "Touch the sensor (simulation)",
 "Déverrouiller avec l'empreinte": "Unlock with fingerprint",
@@ -2294,6 +2308,10 @@ const EN = {
 const EN_LC = {}; Object.entries(EN).forEach(([k,v]) => { EN_LC[k.toLowerCase()] = v.charAt(0).toLowerCase() + v.slice(1); });
 const EN_RX = [
  [/^(\d+) \/ (\d+) réponses$/, "$1 / $2 answers"],
+ [/^Un moment (.+) choisi ensemble$/, (m,l) => `A ${tr(l)} moment chosen together`],
+ [/^Un moment (.+)$/, (m,l) => tr(l) !== l ? `A ${tr(l)} moment` : m],
+ [/^Choisi le (.+?)( · à en parler hors du lit, au calme| · détails dans le moment, rien n'est écrit ici)?$/, (m,d,x) => `Chosen on ${d}` + (x ? (x.includes("parler") ? " · to discuss calmly, outside the bedroom" : " · details in the moment, nothing written here") : "")],
+ [/^Choisi ensemble le (.+)\. Ce moment vous attend sur l'accueil et apparaît dans votre frise\.$/, "Chosen together on $1. This moment is waiting on your home screen and appears on your timeline."],
  [/^Empreinte de (.+)$/, "$1's fingerprint"],
  [/^Enregistrer l'empreinte de (.+)$/, "Register $1's fingerprint"],
  [/^Confirmer avec l'empreinte \((.+)\)$/, "Confirm with fingerprint ($1)"],
@@ -2425,6 +2443,7 @@ function agendaEvents(from, to){
 function historyEvents(){
   const t = todayIso(), out = [];
   S.keys.forEach(k => { if(k.date <= t) out.push({date:k.date, type:"key", title:k.title, sub:k.yearly ? "Date clé, fêtée chaque année" : "Date clé", id:k.id}); });
+  S.planned.forEach(m => { const lv = LEVELS.find(x => x.n === m.lv); out.push({date:isoDay(m.created), type:"chosen", title: m.talk ? "Une envie choisie pour en parler ensemble" : `Un moment ${lv ? lv.name : ""} choisi ensemble`, sub:"En attente"}); });
   S.lived.forEach(l => { const lv = LEVELS.find(x => x.n === l.lv); out.push({date:isoDay(l.date), type:"lived", title: lv ? `Un moment ${lv.name} vécu ensemble` : "Un moment vécu ensemble"}); });
   S.dates.filter(d => d.date < t).forEach(d => out.push({date:d.date, type:"rdv", title:d.title, sub:"Rendez-vous"}));
   S.letters.filter(l => l.opened).forEach(l => out.push({date:isoDay(l.opened), type:"letter", title:`${S.couple.names[l.to]} a ouvert la lettre de ${S.couple.names[l.by]}`, sub:`Écrite le ${dshort(isoDay(l.created))}`}));
@@ -2457,6 +2476,16 @@ function distanceCard(){
       : `<h3>${days === null ? "Loin, mais ensemble" : days === 1 ? "Vous vous retrouvez demain" : days === 0 ? "C'est le jour des retrouvailles" : "Vous êtes à nouveau réunis ?"}</h3>`}
     <p class="muted small">${days === null ? "Ajoutez la date de vos retrouvailles dans l'onglet Ensemble pour lancer le compte à rebours." : "La carte du jour propose des rituels pensés pour la distance."}</p>
     <div class="row"><button class="btn" data-go="distance">Rituels à distance</button>${days !== null && days < 0 ? `<button class="btn ghost" data-act="toggleDistance">Quitter le mode à distance</button>` : ""}</div>
+  </section>`;
+}
+function plannedCard(){
+  if(!S.planned.length) return "";
+  return `<section class="card" style="border-color:var(--rose)">
+    <span class="eyebrow">Vos choix à deux</span>
+    <div class="list">${S.planned.slice().reverse().map(m => { const lv = LEVELS[(m.lv || 1) - 1]; return `<div class="mrow">
+      <span class="t">${m.talk ? "Une envie à aborder ensemble" : `Un moment ${esc(lv ? lv.name : "")}`}</span>
+      ${m.talk ? `<button class="link" data-donetalk="${m.pid}">C'est fait</button>` : `<button class="link" data-planned="${m.pid}">Ouvrir</button>`}
+      <span class="s">Choisi le ${dshort(isoDay(m.created))}${m.talk ? " · à en parler hors du lit, au calme" : " · détails dans le moment, rien n'est écrit ici"}</span></div>`; }).join("")}</div>
   </section>`;
 }
 function homeExtras(){
@@ -2742,6 +2771,7 @@ home(){
       ${done(0)<TOTAL || done(1)<TOTAL ? `<p class="small muted">Plus vous répondez, plus les propositions sont riches.</p>` : ""}
     ` : `<h3>En attente de vos réponses</h3><p class="muted small">Les accords s'affichent quand vous avez commencé le questionnaire tous les deux.</p>`}
   </section>
+  ${plannedCard()}
   ${homeExtras()}
   ${MOBILE || Date.now() - (S.installHide || 0) < 30*DAY ? "" : installCard(true)}
   ${pendingDeb.length ? `<section class="card" style="border-color:var(--gold)">
@@ -2906,7 +2936,9 @@ deck(){
   const left = allMatches().filter(x => !S.revealed.includes(x.item.id) && openLv(x.item.l)).length;
   return `
   <div class="topbar"><button class="back" data-go="home">← Accueil</button><span class="small muted">${left} carte${left>1?"s":""} restante${left>1?"s":""}</span></div>
-  ${card ? revealCard(card) + `<div class="row">${left?`<button class="btn gold" data-act="draw">Carte suivante</button>`:""}<button class="btn ghost" data-go="home">Plus tard</button></div>`
+  ${card ? revealCard(card) + `<div class="stack">${composable(card.item) ? `<button class="btn primary block" data-act="composeCard">Composer un moment avec cette carte</button>`
+      : CATS.find(c => c.id === card.item.cat).talk ? `<button class="btn primary block" data-act="talkCard">On en parle ce soir</button>` : ""}
+    <div class="row">${left?`<button class="btn gold" data-act="draw">Carte suivante</button>`:""}<button class="btn ghost" data-go="home">Plus tard</button></div></div>`
   : `<h2>À vous deux</h2><p class="muted">Installez-vous côte à côte. Chaque carte est une envie que vous avez cochée tous les deux.</p>
      <div class="deck"><div class="back-card"></div><div class="back-card"></div><div class="back-card" data-act="draw" role="button" tabindex="0" aria-label="Retourner une carte"><span>Toucher pour retourner</span></div></div>`}`; },
 
@@ -2947,11 +2979,12 @@ moment(){
         <div class="step"><div><h4>Le cœur du moment</h4><p>${mo.core}</p></div></div>
         <div class="step"><div><h4>Après</h4><p>Restez peau contre peau quelques minutes, un verre d'eau, puis chacun dit une chose qu'il a aimée. Le lendemain, un mot doux par message.</p></div></div>
       </div>
-      <div class="row"><button class="btn gold" data-act="lived">Nous l'avons vécu</button></div>
+      ${mo.pid ? `<p class="banner">Choisi ensemble le ${dshort(isoDay(mo.created || Date.now()))}. Ce moment vous attend sur l'accueil et apparaît dans votre frise.</p>` : ""}
+      <div class="row"><button class="btn gold" data-act="lived">Nous l'avons vécu</button>${mo.pid ? `<button class="btn" data-act="planMoment">Le prévoir dans l'agenda</button><button class="link" data-act="dropMoment">Retirer ce choix</button>` : ""}</div>
       ${S.aff ? shopHtml([COFFRETS[Math.min(mo.lv,3)], ...mo.ids.flatMap(id => affFor(ITEMS[id]))]) : ""}
       ${S.aff ? `<div class="shop"><span class="eyebrow">Pour en faire une vraie sortie</span>${EXPERIENCES[mo.lv].map(e => `<div class="prod"><div><strong>${esc(e.p)}</strong><p class="small muted">${esc(e.w)}</p></div><span class="pill">Réservation à brancher</span></div>`).join("")}</div>` : ""}
     </section>` : ""}
-  ${footer(`<button class="btn primary" data-act="compose">${mo?"Une autre proposition":"Composer"}</button>`)}`; },
+  ${mo && mo.pid ? "" : footer(`<button class="btn primary" data-act="compose">${mo?"Une autre proposition":"Composer"}</button>`)}`; },
 
 /* ---------- Fil ---------- */
 feed(){
@@ -3610,6 +3643,7 @@ function revealCard(m){
   const it = m.item, risk = it.risk && RISK[it.risk];
   const talk = CATS.find(c => c.id === it.cat).talk;
   return `<section class="reveal">
+    <span class="dbl"><i aria-hidden="true"></i>Double oui : vous en avez envie tous les deux</span>
     <div class="spread"><span class="eyebrow">${esc(catName(it.cat))}</span><span class="pill s${m.score}">${scoreLabel(m.score)}</span></div>
     <div class="label">${esc(it.label)}</div>
     ${it.d ? `<p class="muted">${esc(it.d)}</p>` : ""}
@@ -3641,11 +3675,13 @@ function roleSentence(m){
   const giver = m.who[0]===0 || m.who[1]===1 ? 0 : 1;
   return ` (${nm(giver)} : ${esc(r[0]).toLowerCase()}, ${nm(1-giver)} : ${esc(r[1]).toLowerCase()})`;
 }
-function compose(lv){
+const composable = it => !it.risk && it.cat !== "ouverture" && openLv(it.l);
+function compose(lv, coreId){
   const pool = allMatches().filter(m => !m.item.risk && m.item.cat !== "ouverture" && openLv(m.item.l));
   const inLv = pool.filter(m => m.item.l === lv), under = pool.filter(m => m.item.l <= lv);
   const weighted = l => { const w = []; l.forEach(m => { for(let i=0;i<m.score*m.score;i++) w.push(m); }); return w; };
-  const core = pick(weighted(inLv.length ? inLv : under));
+  const forced = coreId && pool.find(m => m.item.id === coreId);
+  const core = forced || pick(weighted(inLv.length ? inLv : under));
   const soft = pool.filter(m => m.item.l === 1 && m.item.id !== core.item.id);
   const extra = under.filter(m => m.item.id !== core.item.id && m.item.cat !== core.item.cat && m.item.l > 1);
   const open = soft.length ? pick(soft) : null;
@@ -3862,6 +3898,9 @@ function bindPhases(){
   if(am) am.onchange = () => { S.auth.me = +am.value; S.auth.lock = S.auth.lock && hasKey(S.auth.me); SESSION.unlocked = false; save(); render(); };
   q("[data-addkey]").forEach(b => b.onclick = async () => { const p = +b.dataset.addkey, k = await registerPasskey(p); if(k){ S.auth.passkey[p] = k; if(isMe(p)) SESSION.unlocked = true; save(); } render(); });
   q("[data-unkey]").forEach(b => b.onclick = () => { const p = +b.dataset.unkey; S.auth.passkey[p] = null; if(isMe(p)){ S.auth.lock = false; SESSION.unlocked = false; } save(); render(); });
+  q("[data-planned]").forEach(b => b.onclick = () => { const mo = S.planned.find(x => x.pid === b.dataset.planned); if(mo) go("moment", {lv:mo.lv, mo}); });
+  q("[data-donetalk]").forEach(b => b.onclick = () => { const m = S.planned.find(x => x.pid === b.dataset.donetalk);
+    if(m){ S.keys.push({id:"k" + Date.now().toString(36), title:"Une conversation importante à deux", date:todayIso(), yearly:false}); S.planned = S.planned.filter(x => x !== m); save(); render(); } });
   q("[data-phase]").forEach(b => b.onclick = () => { S.testPhase = +b.dataset.phase; PHASE = S.testPhase; save(); render(); });
   q("[data-scope]").forEach(b => b.onclick = () => go("feed", {scope:b.dataset.scope}));
   q("[data-uncircle]").forEach(b => b.onclick = () => { S.circle = S.circle.filter(c => c !== b.dataset.uncircle); save(); go("feed", {scope:V.scope}); });
@@ -3928,7 +3967,15 @@ const ACT = {
   togglePause(){ S.pause = !S.pause; save(); render(); },
   modeInvite(){ msgGo({mode:"invite"}); },
   dailyDone(){ S.daily[new Date().toISOString().slice(0,10)] = true; save(); render(); },
-  lived(){ if(!V.mo) return; S.lived.push({id:"l"+Date.now().toString(36), ids:V.mo.ids, lv:V.mo.lv, title:V.mo.title, date:Date.now(), deb:[false,false]}); save(); go("home"); },
+  lived(){ if(!V.mo) return; S.lived.push({id:"l"+Date.now().toString(36), ids:V.mo.ids, lv:V.mo.lv, title:V.mo.title, date:Date.now(), deb:[false,false]});
+    if(V.mo.pid) S.planned = S.planned.filter(x => x.pid !== V.mo.pid); save(); go("home"); },
+  composeCard(){ const it = ITEMS[V.card]; if(!it || !composable(it)) return;
+    const mo = compose(it.l, it.id); mo.pid = "c" + Date.now().toString(36); mo.created = Date.now(); mo.card = it.id;
+    S.planned.push(mo); save(); go("moment", {lv:it.l, mo}); },
+  talkCard(){ const it = ITEMS[V.card]; if(!it) return;
+    S.planned.push({pid:"t" + Date.now().toString(36), talk:true, card:it.id, lv:it.l, created:Date.now(), title:it.label}); save(); go("home"); },
+  planMoment(){ const lv = LEVELS[(V.mo.lv || 1) - 1]; go("agenda", {prefill:`Moment à deux · ${lv ? lv.name : ""}`}); },
+  dropMoment(){ S.planned = S.planned.filter(x => x.pid !== V.mo.pid); save(); go("home"); },
   activatePlan(){ S.plan = V.sel || "year"; save(); go("plus"); },
   cancelPlan(){ S.plan = "free"; save(); go("plus"); },
   giftMake(){ const r = () => Math.random().toString(36).slice(2,6).toUpperCase().padEnd(4,"X"); go("plus",{sel:V.sel, gift:`BTN+-${r()}-${r()}`}); },
